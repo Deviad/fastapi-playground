@@ -62,10 +62,21 @@ def do_run_migrations(connection):
     connection.execute(text("CREATE SCHEMA IF NOT EXISTS test_app"))
     logger.info("Schema test_app ensured")
 
+    # Add diagnostic logging
+    logger.info(f"Target metadata tables: {list(target_metadata.tables.keys())}")
+    logger.info(f"Base metadata tables: {list(Base.metadata.tables.keys())}")
+
+    # Log the User model table name
+    from flask_playground_poc.models.User import User
+
+    logger.info(f"User model tablename: {User.__tablename__}")
+
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
+        logger.info("Starting migration transaction...")
         context.run_migrations()
+        logger.info("Migration transaction completed")
 
 
 async def run_async_migrations():
