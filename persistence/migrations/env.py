@@ -1,13 +1,13 @@
 from logging.config import fileConfig
 import logging
 import asyncio
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
 # Import your models and Base
 from flask_playground_poc.db import Base
-from flask_playground_poc.models.User import SomeClass  # Import your models
+from flask_playground_poc.models.User import User  # Import your models
 
 # Add diagnostic logging
 logger = logging.getLogger("alembic.env")
@@ -57,6 +57,11 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection):
     """Helper function to run migrations with a connection."""
+    # Create schema if it doesn't exist
+    logger.info("Ensuring test_app schema exists...")
+    connection.execute(text("CREATE SCHEMA IF NOT EXISTS test_app"))
+    logger.info("Schema test_app ensured")
+
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
