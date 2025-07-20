@@ -2,9 +2,11 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from flask_playground_poc.db import get_db
 from flask_playground_poc.models.User import User
+from flask_playground_poc.models.UserInfo import UserInfo
 from flask_playground_poc.schemas import UserCreate, UserResponse
 
 router = APIRouter()
@@ -12,23 +14,51 @@ router = APIRouter()
 
 @router.post("/user", response_model=UserResponse)
 async def create_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Create a new user"""
-    # Create new user instance
-    new_user = User(name=user_data.name)
+    """Create a new user with user info"""
+    try:
+        # Create new user instance
+        new_user = User(name=user_data.name)
 
-    # Add to database
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
+        # Add user to session first
+        db.add(new_user)
+        await db.flush()  # Flush to get the user ID
 
-    return new_user
+        # Create user info instance
+        new_user_info = UserInfo(
+            user_id=new_user.id, address=user_data.address, bio=user_data.bio
+        )
+
+        # Add user info to session
+        db.add(new_user_info)
+
+        # Commit both user and user_info
+        await db.commit()
+
+        # Refresh user with user_info relationship
+        await db.refresh(new_user)
+
+        # Load the user_info relationship
+        result = await db.execute(
+            select(User)
+            .options(selectinload(User.user_info))
+            .where(User.id == new_user.id)
+        )
+        user_with_info = result.scalar_one()
+
+        return user_with_info
+
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error creating user: {str(e)}")
 
 
 @router.get("/user/{user_id}", response_model=UserResponse)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    """Get a user by ID"""
-    # Query for user by ID
-    result = await db.execute(select(User).where(User.id == user_id))
+    """Get a user by ID with user info"""
+    # Query for user by ID with user_info relationship
+    result = await db.execute(
+        select(User).options(selectinload(User.user_info)).where(User.id == user_id)
+    )
     user = result.scalar_one_or_none()
 
     if user is None:
@@ -39,9 +69,9 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get("/users", response_model=List[UserResponse])
 async def get_all_users(db: AsyncSession = Depends(get_db)):
-    """Get all users"""
-    # Query for all users
-    result = await db.execute(select(User))
+    """Get all users with user info"""
+    # Query for all users with user_info relationship
+    result = await db.execute(select(User).options(selectinload(User.user_info)))
     users = result.scalars().all()
 
     return users
