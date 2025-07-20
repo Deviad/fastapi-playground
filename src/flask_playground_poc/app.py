@@ -1,15 +1,19 @@
 from fastapi import FastAPI
 from flask_playground_poc.user_routes import router as user_router
+from flask_playground_poc.courses_routes import router as courses_router
 
 # Create FastAPI application
 app = FastAPI(
     title="Flask Playground POC",
-    description="A FastAPI application with user management",
+    description="A FastAPI application with user and course management",
     version="0.1.0",
 )
 
 # Include user routes
 app.include_router(user_router, tags=["users"])
+
+# Include courses routes
+app.include_router(courses_router, tags=["courses"])
 
 
 @app.get("/")

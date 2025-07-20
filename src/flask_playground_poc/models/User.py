@@ -14,3 +14,13 @@ class User(SqlBase):
     user_info = relationship(
         "UserInfo", back_populates="user", uselist=False, cascade="save-update"
     )
+
+    # One-to-many relationship with Enrollment
+    enrollments = relationship(
+        "Enrollment", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    # Many-to-many relationship with Course through Enrollment (viewonly for convenience)
+    courses = relationship(
+        "Course", secondary="enrollments", back_populates="users", viewonly=True
+    )
