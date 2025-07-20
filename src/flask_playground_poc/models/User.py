@@ -10,6 +10,7 @@ class User(SqlBase):
     name = Column(String(50))
 
     # One-to-one relationship with UserInfo
+    # cascade="save-update" allows automatic saving but keeps user when user_info is deleted
     user_info = relationship(
-        "UserInfo", back_populates="user", uselist=False, cascade="all, delete-orphan"
+        "UserInfo", back_populates="user", uselist=False, cascade="save-update"
     )

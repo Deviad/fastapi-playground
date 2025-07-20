@@ -8,7 +8,9 @@ class UserInfo(SqlBase):
     __tablename__ = "user_info"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
     address = Column(String(255), nullable=False)
     bio = Column(Text, nullable=True)
 

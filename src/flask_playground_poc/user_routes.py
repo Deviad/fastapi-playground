@@ -14,30 +14,23 @@ router = APIRouter()
 
 @router.post("/user", response_model=UserResponse)
 async def create_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Create a new user with user info"""
+    """Create a new user with user info using direct assignment pattern"""
     try:
         # Create new user instance
         new_user = User(name=user_data.name)
 
-        # Add user to session first
-        db.add(new_user)
-        await db.flush()  # Flush to get the user ID
-
         # Create user info instance
-        new_user_info = UserInfo(
-            user_id=new_user.id, address=user_data.address, bio=user_data.bio
-        )
+        new_user_info = UserInfo(address=user_data.address, bio=user_data.bio)
 
-        # Add user info to session
-        db.add(new_user_info)
+        # Direct assignment - this is the pattern you asked about!
+        # With cascade="save-update", both objects will be saved automatically
+        new_user.user_info = new_user_info
 
-        # Commit both user and user_info
+        # Only need to add the parent object - cascade handles the rest
+        db.add(new_user)
         await db.commit()
 
-        # Refresh user with user_info relationship
-        await db.refresh(new_user)
-
-        # Load the user_info relationship
+        # Load the user with the relationship properly for serialization
         result = await db.execute(
             select(User)
             .options(selectinload(User.user_info))
