@@ -62,6 +62,28 @@ def do_run_migrations(connection):
     connection.execute(text("CREATE SCHEMA IF NOT EXISTS test_app"))
     logger.info("Schema test_app ensured")
 
+    # Create alembic_version table in test_app schema if it doesn't exist
+    # logger.info("Ensuring alembic_version table exists in test_app schema...")
+    # connection.execute(
+    #     text(
+    #         """
+    #     CREATE TABLE IF NOT EXISTS test_app.alembic_version (
+    #         version_num VARCHAR(32) NOT NULL,
+    #         CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
+    #     )
+    # """
+    #     )
+    # )
+    connection.commit()
+    # logger.info("alembic_version table ensured in test_app schema")
+    # Verify schema exists
+    schema_check = connection.execute(
+        text(
+            "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'test_app'"
+        )
+    )
+    schema_exists = schema_check.fetchone() is not None
+    logger.info(f"Schema test_app exists: {schema_exists}")
     # Add diagnostic logging
     logger.info(f"Target metadata tables: {list(target_metadata.tables.keys())}")
     logger.info(f"Base metadata tables: {list(Base.metadata.tables.keys())}")
@@ -77,6 +99,8 @@ def do_run_migrations(connection):
         logger.info("Starting migration transaction...")
         context.run_migrations()
         logger.info("Migration transaction completed")
+        # Explicitly commit the transaction
+        context.get_context().execute("COMMIT")
 
 
 async def run_async_migrations():
@@ -91,7 +115,8 @@ async def run_async_migrations():
     # Remove server_settings from URL and pass as connect_args
     if "server_settings=" in db_url:
         # Extract the base URL without server_settings
-        base_url = db_url.split("?")[0]
+        # base_url = db_url.split("?")[0]
+        base_url = db_url
         logger.info(f"Base Database URL: {base_url}")
 
         # Create async engine with server_settings as connect_args
@@ -101,9 +126,11 @@ async def run_async_migrations():
             connect_args={"server_settings": {"search_path": "test_app"}},
         )
     else:
+        base_url = db_url
         connectable = create_async_engine(
-            db_url,
+            base_url,
             poolclass=pool.NullPool,
+            connect_args={"server_settings": {"search_path": "test_app"}},
         )
 
     logger.info(f"Target metadata: {target_metadata}")
