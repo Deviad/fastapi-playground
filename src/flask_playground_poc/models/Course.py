@@ -21,5 +21,9 @@ class Course(SqlBase):
 
     # Many-to-many relationship with User through Enrollment (viewonly for convenience)
     users = relationship(
-        "User", secondary="enrollments", back_populates="courses", viewonly=True
+        "User",
+        secondary="enrollments",
+        back_populates="courses",
+        viewonly=True,
+        overlaps="enrollments",
     )

@@ -89,6 +89,9 @@ async def update_course(
         await db.refresh(course)
         return course
 
+    except HTTPException:
+        await db.rollback()
+        raise  # Re-raise HTTPExceptions (like 404) as-is
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error updating course: {str(e)}")
@@ -110,6 +113,9 @@ async def delete_course(course_id: int, db: AsyncSession = Depends(get_db)):
 
         return {"message": f"Course {course_id} deleted successfully"}
 
+    except HTTPException:
+        await db.rollback()
+        raise  # Re-raise HTTPExceptions (like 404) as-is
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error deleting course: {str(e)}")
@@ -152,6 +158,9 @@ async def enroll_user_in_course(
         raise HTTPException(
             status_code=409, detail="User is already enrolled in this course"
         )
+    except HTTPException:
+        await db.rollback()
+        raise  # Re-raise HTTPExceptions (like 404, 409) as-is
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error enrolling user: {str(e)}")
@@ -174,11 +183,15 @@ async def unenroll_user_from_course(
         if enrollment is None:
             raise HTTPException(status_code=404, detail="Enrollment not found")
 
+        # Delete the enrollment
         await db.delete(enrollment)
         await db.commit()
 
         return {"message": f"User {user_id} unenrolled from course {course_id}"}
 
+    except HTTPException:
+        await db.rollback()
+        raise  # Re-raise HTTPExceptions (like 404) as-is
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error unenrolling user: {str(e)}")
@@ -187,30 +200,56 @@ async def unenroll_user_from_course(
 @router.get("/user/{user_id}/courses", response_model=UserResponseWithCourses)
 async def get_user_courses(user_id: int, db: AsyncSession = Depends(get_db)):
     """Get a user with all their enrolled courses"""
-    result = await db.execute(
-        select(User)
-        .options(selectinload(User.user_info), selectinload(User.courses))
-        .where(User.id == user_id)
+    # Get user first (without loading enrollments to avoid cache)
+    user_result = await db.execute(
+        select(User).options(selectinload(User.user_info)).where(User.id == user_id)
     )
-    user = result.scalar_one_or_none()
+    user = user_result.scalar_one_or_none()
 
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    return user
+    # Get courses through a fresh enrollment query (bypasses any cached relationships)
+    courses_result = await db.execute(
+        select(Course)
+        .join(Enrollment, Course.id == Enrollment.course_id)
+        .where(Enrollment.user_id == user_id)
+    )
+    courses = courses_result.scalars().all()
+
+    # Create response dict manually to include the courses
+    return {
+        "id": user.id,
+        "name": user.name,
+        "user_info": user.user_info,
+        "courses": courses,
+    }
 
 
 @router.get("/course/{course_id}/users", response_model=CourseResponseWithUsers)
 async def get_course_users(course_id: int, db: AsyncSession = Depends(get_db)):
     """Get a course with all enrolled users"""
-    result = await db.execute(
-        select(Course)
-        .options(selectinload(Course.users).selectinload(User.user_info))
-        .where(Course.id == course_id)
-    )
-    course = result.scalar_one_or_none()
+    # Get course first (without loading enrollments to avoid cache)
+    course_result = await db.execute(select(Course).where(Course.id == course_id))
+    course = course_result.scalar_one_or_none()
 
     if course is None:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    return course
+    # Get users through a fresh enrollment query (bypasses any cached relationships)
+    users_result = await db.execute(
+        select(User)
+        .options(selectinload(User.user_info))
+        .join(Enrollment, User.id == Enrollment.user_id)
+        .where(Enrollment.course_id == course_id)
+    )
+    users = users_result.scalars().all()
+
+    # Create response dict manually to include the users
+    return {
+        "id": course.id,
+        "name": course.name,
+        "author_name": course.author_name,
+        "price": course.price,
+        "users": users,
+    }

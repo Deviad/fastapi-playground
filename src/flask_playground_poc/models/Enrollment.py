@@ -22,8 +22,10 @@ class Enrollment(SqlBase):
     enrollment_date = Column(DateTime, default=func.now(), nullable=False)
 
     # Relationships
-    user = relationship("User", back_populates="enrollments")
-    course = relationship("Course", back_populates="enrollments")
+    user = relationship("User", back_populates="enrollments", overlaps="courses,users")
+    course = relationship(
+        "Course", back_populates="enrollments", overlaps="courses,users"
+    )
 
     # Ensure a user can only enroll in a course once
     __table_args__ = (
