@@ -15,34 +15,29 @@ router = APIRouter()
 @router.post("/user", response_model=UserResponse)
 async def create_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Create a new user with user info using direct assignment pattern"""
-    try:
-        # Create new user instance
-        new_user = User(name=user_data.name)
+    # Create new user instance
+    new_user = User(name=user_data.name)
 
-        # Create user info instance
-        new_user_info = UserInfo(address=user_data.address, bio=user_data.bio)
+    # Create user info instance
+    new_user_info = UserInfo(address=user_data.address, bio=user_data.bio)
 
-        # Direct assignment - this is the pattern you asked about!
-        # With cascade="save-update", both objects will be saved automatically
-        new_user.user_info = new_user_info
+    # Direct assignment - this is the pattern you asked about!
+    # With cascade="save-update", both objects will be saved automatically
+    new_user.user_info = new_user_info
 
-        # Only need to add the parent object - cascade handles the rest
-        db.add(new_user)
-        await db.commit()
+    # Only need to add the parent object - cascade handles the rest
+    db.add(new_user)
+    await db.commit()
 
-        # Load the user with the relationship properly for serialization
-        result = await db.execute(
-            select(User)
-            .options(selectinload(User.user_info))
-            .where(User.id == new_user.id)
-        )
-        user_with_info = result.scalar_one()
+    # Load the user with the relationship properly for serialization
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.user_info))
+        .where(User.id == new_user.id)
+    )
+    user_with_info = result.scalar_one()
 
-        return user_with_info
-
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error creating user: {str(e)}")
+    return user_with_info
 
 
 @router.get("/user/{user_id}", response_model=UserResponse)

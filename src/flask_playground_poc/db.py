@@ -20,9 +20,13 @@ AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=F
 
 
 async def get_db():
-    """Dependency to get database session"""
+    """Dependency to get database session with automatic rollback on exceptions"""
     async with AsyncSessionLocal() as session:
         try:
             yield session
+        except Exception:
+            # Automatic rollback on any exception during the request
+            await session.rollback()
+            raise  # Re-raise the original exception to preserve error context
         finally:
             await session.close()
