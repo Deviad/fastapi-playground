@@ -204,7 +204,7 @@ async def test_isolation_levels_sql_commands():
         pass
     
     # Mock the session and its execute method
-    with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+    with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
         mock_session = AsyncMock()
         mock_get_db.return_value = async_generator_from_session(mock_session)
         
@@ -405,7 +405,7 @@ The final implementation provides:
 ## 📚 Files Created/Modified
 
 ### Implementation Files
-- `src/flask_playground_poc/transactional.py` - Core decorator implementation (391 lines)
+- `src/fastapi_playground_poc/transactional.py` - Core decorator implementation (391 lines)
 
 ### Testing Files  
 - `tests/test_transactional.py` - Comprehensive test suite (1000+ lines, 32 test cases)

@@ -12,8 +12,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
-from flask_playground_poc.app import app
-from flask_playground_poc.db import get_db
+from fastapi_playground_poc.app import app
+from fastapi_playground_poc.db import get_db
 from tests.test_config import (
     get_test_db,
     create_test_tables,
@@ -22,10 +22,10 @@ from tests.test_config import (
 )
 
 # Import original models to ensure they're registered
-from flask_playground_poc.models.User import User
-from flask_playground_poc.models.UserInfo import UserInfo
-from flask_playground_poc.models.Course import Course
-from flask_playground_poc.models.Enrollment import Enrollment
+from fastapi_playground_poc.models.User import User
+from fastapi_playground_poc.models.UserInfo import UserInfo
+from fastapi_playground_poc.models.Course import Course
+from fastapi_playground_poc.models.Enrollment import Enrollment
 
 
 @pytest.fixture(scope="session")

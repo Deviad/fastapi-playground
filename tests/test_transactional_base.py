@@ -8,7 +8,7 @@ import pytest_asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
-from flask_playground_poc.transactional import (
+from fastapi_playground_poc.transactional import (
     Transactional, Propagation, IsolationLevel,
     TransactionRequiredError, TransactionNotAllowedError,
     get_current_session, is_transaction_active, mark_rollback_only
@@ -103,14 +103,14 @@ async def mock_session():
 @pytest.fixture
 def sample_user_data():
     """Sample user data for testing"""
-    from flask_playground_poc.schemas import UserCreate
+    from fastapi_playground_poc.schemas import UserCreate
     return UserCreate(name="Test User", address="123 Test St", bio="Test bio")
 
 
 @pytest.fixture  
 def sample_course_data():
     """Sample course data for testing"""
-    from flask_playground_poc.schemas import CourseCreate
+    from fastapi_playground_poc.schemas import CourseCreate
     return CourseCreate(name="Test Course", author_name="Test Author", price=99.99)
 
 
@@ -126,7 +126,7 @@ class TestTransactionalDecoratorBase:
             assert isinstance(db, AsyncSession)
             return "success"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             result = await test_func()
@@ -146,7 +146,7 @@ class TestTransactionalDecoratorBase:
         
         service = TestService()
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             result = await service.test_method()
@@ -162,7 +162,7 @@ class TestTransactionalDecoratorBase:
         async def test_func(db: AsyncSession):
             raise ValueError("Test exception")
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             with pytest.raises(ValueError):
@@ -181,7 +181,7 @@ class TestTransactionalDecoratorBase:
                 raise exception_type("Test exception")
             return "success"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             # Test no exception
@@ -218,7 +218,7 @@ class TestPropagationBase:
             assert is_transaction_active()
             return "success"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             assert not is_transaction_active()
@@ -240,7 +240,7 @@ class TestPropagationBase:
             result = await inner_func()
             return f"outer_{result}"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             result = await outer_func()
@@ -259,7 +259,7 @@ class TestPropagationBase:
         async def outer_func(db: AsyncSession):
             return await inner_func()
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             result = await outer_func()
@@ -300,7 +300,7 @@ class TestPropagationBase:
         async def outer_func(db: AsyncSession):
             return await inner_func()
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             with pytest.raises(TransactionNotAllowedError):
@@ -319,7 +319,7 @@ class TestPropagationBase:
         async def outer_func(db: AsyncSession):
             return await inner_func()
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             result = await outer_func()
@@ -353,7 +353,7 @@ class TestPropagationBase:
             assert is_transaction_active()  # Transaction should be restored
             return result
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             result = await outer_func()
@@ -378,7 +378,7 @@ class TestNestedTransactionBase:
             result = await inner_service_method()
             return f"outer_{result}"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             result = await outer_service_method()
@@ -397,7 +397,7 @@ class TestNestedTransactionBase:
             await failing_inner_method()
             return "should_not_reach"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             with pytest.raises(ValueError):
@@ -420,7 +420,7 @@ class TestContextFunctionsBase:
             assert current_session is not None
             assert isinstance(current_session, AsyncSession)
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             await test_func()
@@ -441,7 +441,7 @@ class TestContextFunctionsBase:
         
         assert not is_transaction_active()
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             await test_func()
@@ -457,7 +457,7 @@ class TestContextFunctionsBase:
             mark_rollback_only()
             return "marked_for_rollback"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(mock_session)
             
             result = await test_func()
@@ -480,8 +480,8 @@ class UserService:
     @Transactional()
     async def create_user_with_info(self, db: AsyncSession, user_data) -> object:
         """Create a user with user info in a transaction"""
-        from flask_playground_poc.models.User import User
-        from flask_playground_poc.models.UserInfo import UserInfo
+        from fastapi_playground_poc.models.User import User
+        from fastapi_playground_poc.models.UserInfo import UserInfo
         
         new_user = User(name=user_data.name)
         new_user_info = UserInfo(address=user_data.address, bio=user_data.bio)
@@ -506,7 +506,7 @@ class UserService:
     async def audit_user_creation(self, db: AsyncSession, user_id: int) -> bool:
         """Audit user creation in a separate transaction"""
         from sqlalchemy import select
-        from flask_playground_poc.models.User import User
+        from fastapi_playground_poc.models.User import User
         
         # This would run in a completely separate transaction
         result = await db.execute(select(User).where(User.id == user_id))
@@ -517,7 +517,7 @@ class UserService:
     async def get_user_count(self, db: AsyncSession) -> int:
         """Get user count in read-only transaction"""
         from sqlalchemy import select
-        from flask_playground_poc.models.User import User
+        from fastapi_playground_poc.models.User import User
         
         result = await db.execute(select(User))
         users = result.scalars().all()
@@ -529,7 +529,7 @@ class UserService:
     )
     async def create_user_with_custom_rollback(self, db: AsyncSession, user_data, fail_type: str = None):
         """Create user with custom rollback rules"""
-        from flask_playground_poc.models.User import User
+        from fastapi_playground_poc.models.User import User
         
         new_user = User(name=user_data.name)
         db.add(new_user)
@@ -544,7 +544,7 @@ class UserService:
     @Transactional()
     async def create_user_with_manual_rollback(self, db: AsyncSession, user_data):
         """Create user and manually mark for rollback"""
-        from flask_playground_poc.models.User import User
+        from fastapi_playground_poc.models.User import User
         
         new_user = User(name=user_data.name)
         db.add(new_user)
@@ -562,8 +562,8 @@ class CourseService:
     async def create_course_and_enroll_user(self, db: AsyncSession, course_data, user_id: int):
         """Create course and enroll a user in a single transaction"""
         from datetime import datetime
-        from flask_playground_poc.models.Course import Course
-        from flask_playground_poc.models.Enrollment import Enrollment
+        from fastapi_playground_poc.models.Course import Course
+        from fastapi_playground_poc.models.Enrollment import Enrollment
         
         # Create course
         new_course = Course(
@@ -588,7 +588,7 @@ class CourseService:
     async def enroll_user_mandatory(self, db: AsyncSession, user_id: int, course_id: int):
         """This method requires an existing transaction"""
         from datetime import datetime
-        from flask_playground_poc.models.Enrollment import Enrollment
+        from fastapi_playground_poc.models.Enrollment import Enrollment
         
         enrollment = Enrollment(
             user_id=user_id,

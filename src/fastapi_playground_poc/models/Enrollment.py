@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from flask_playground_poc.db import Base as SqlBase
+from fastapi_playground_poc.db import Base as SqlBase
 
 
 class Enrollment(SqlBase):

@@ -9,16 +9,16 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 
-from flask_playground_poc.transactional import (
+from fastapi_playground_poc.transactional import (
     Transactional, Propagation, IsolationLevel,
     get_current_session, is_transaction_active, mark_rollback_only,
     transactional, read_only_transaction, requires_new_transaction
 )
-from flask_playground_poc.models.User import User
-from flask_playground_poc.models.UserInfo import UserInfo
-from flask_playground_poc.models.Course import Course
-from flask_playground_poc.models.Enrollment import Enrollment
-from flask_playground_poc.schemas import UserCreate, CourseCreate
+from fastapi_playground_poc.models.User import User
+from fastapi_playground_poc.models.UserInfo import UserInfo
+from fastapi_playground_poc.models.Course import Course
+from fastapi_playground_poc.models.Enrollment import Enrollment
+from fastapi_playground_poc.schemas import UserCreate, CourseCreate
 
 from .test_transactional_base import (
     TestTransactionalDecoratorBase,
@@ -63,7 +63,7 @@ async def mock_transactional_db(test_db):
             await test_db.close()
     
     # Patch the get_db import in the transactional module
-    with patch('flask_playground_poc.transactional.get_db', test_get_db):
+    with patch('fastapi_playground_poc.transactional.get_db', test_get_db):
         yield test_db
 
 
@@ -107,7 +107,7 @@ class TestSQLiteSpecificBehavior:
         async def test_func(db: AsyncSession):
             return "read_only_test"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(sqlite_mock_session)
             
             result = await test_func()
@@ -133,7 +133,7 @@ class TestSQLiteSpecificBehavior:
             await asyncio.sleep(2)  # Long delay that should timeout
             return "slow_success"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(sqlite_mock_session)
             
             # Fast function should succeed
@@ -157,7 +157,7 @@ class TestSQLiteSpecificBehavior:
         async def test_func(db: AsyncSession):
             return "isolation_test"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(sqlite_mock_session)
             
             result = await test_func()
@@ -182,7 +182,7 @@ class TestSQLiteSpecificBehavior:
             async def test_func(db: AsyncSession):
                 return f"isolation_{isolation_level.value.lower().replace(' ', '_')}"
             
-            with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+            with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
                 mock_get_db.side_effect = mock_get_db_factory(sqlite_mock_session)
                 
                 result = await test_func()

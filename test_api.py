@@ -3,7 +3,7 @@
 Test script using FastAPI TestClient to verify endpoints are working correctly.
 """
 from fastapi.testclient import TestClient
-from flask_playground_poc.app import app
+from fastapi_playground_poc.app import app
 
 # Create test client
 client = TestClient(app)

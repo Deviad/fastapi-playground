@@ -1,11 +1,11 @@
 from fastapi import FastAPI
-from flask_playground_poc.user_routes import router as user_router
-from flask_playground_poc.courses_routes import router as courses_router
-from flask_playground_poc.exception_handlers import register_exception_handlers
+from fastapi_playground_poc.user_routes import router as user_router
+from fastapi_playground_poc.courses_routes import router as courses_router
+from fastapi_playground_poc.exception_handlers import register_exception_handlers
 
 # Create FastAPI application
 app = FastAPI(
-    title="Flask Playground POC",
+    title="fastapi Playground POC",
     description="A FastAPI application with user and course management",
     version="0.1.0",
 )
@@ -23,7 +23,7 @@ app.include_router(courses_router, tags=["courses"])
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {"message": "Welcome to Flask Playground POC API"}
+    return {"message": "Welcome to fastapi Playground POC API"}
 
 
 @app.get("/health")

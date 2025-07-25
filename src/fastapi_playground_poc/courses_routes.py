@@ -6,11 +6,11 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
-from flask_playground_poc.db import get_db
-from flask_playground_poc.models.Course import Course
-from flask_playground_poc.models.User import User
-from flask_playground_poc.models.Enrollment import Enrollment
-from flask_playground_poc.schemas import (
+from fastapi_playground_poc.db import get_db
+from fastapi_playground_poc.models.Course import Course
+from fastapi_playground_poc.models.User import User
+from fastapi_playground_poc.models.Enrollment import Enrollment
+from fastapi_playground_poc.schemas import (
     CourseCreate,
     CourseUpdate,
     CourseResponse,

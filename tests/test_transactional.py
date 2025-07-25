@@ -59,7 +59,7 @@ from .test_transactional_base import (
 #   pytest tests/test_transactional_sqlite.py::TestSQLiteSpecificBehavior -v
 #
 # Run with coverage:
-#   pytest tests/test_transactional_sqlite.py --cov=src/flask_playground_poc/transactional
+#   pytest tests/test_transactional_sqlite.py --cov=src/fastapi_playground_poc/transactional
 
 # Test Coverage Summary:
 #

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Numeric
 from sqlalchemy.orm import relationship
 
-from flask_playground_poc.db import Base as SqlBase
+from fastapi_playground_poc.db import Base as SqlBase
 
 
 class Course(SqlBase):

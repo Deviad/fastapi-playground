@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 # Import the original Base from the main application
-from flask_playground_poc.db import Base
+from fastapi_playground_poc.db import Base
 
 # In-memory SQLite database URL for testing
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -125,10 +125,10 @@ async def get_test_db():
 async def create_test_tables():
     """Create all test tables in the in-memory database using original models"""
     # Import original models to ensure they're registered
-    from flask_playground_poc.models.User import User
-    from flask_playground_poc.models.UserInfo import UserInfo
-    from flask_playground_poc.models.Course import Course
-    from flask_playground_poc.models.Enrollment import Enrollment
+    from fastapi_playground_poc.models.User import User
+    from fastapi_playground_poc.models.UserInfo import UserInfo
+    from fastapi_playground_poc.models.Course import Course
+    from fastapi_playground_poc.models.Enrollment import Enrollment
 
     # Register DDL event listeners for consistent autoincrement behavior
     for model in [User, UserInfo, Course, Enrollment]:

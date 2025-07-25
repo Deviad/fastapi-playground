@@ -1,5 +1,5 @@
 [project]
-name = "flask-playground-poc"
+name = "fastapi-playground-poc"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-flask-playground-poc = "flask_playground_poc:main"
+fastapi-playground-poc = "fastapi_playground_poc:main"
 
 [build-system]
 requires = ["hatchling"]

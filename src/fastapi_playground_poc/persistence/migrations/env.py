@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
 # Import your models and Base
-from flask_playground_poc.db import Base
-from flask_playground_poc.models.User import User  # Import your models
+from fastapi_playground_poc.db import Base
+from fastapi_playground_poc.models.User import User  # Import your models
 
 # Add diagnostic logging
 logger = logging.getLogger("alembic.env")
@@ -89,7 +89,7 @@ def do_run_migrations(connection):
     logger.info(f"Base metadata tables: {list(Base.metadata.tables.keys())}")
 
     # Log the User model table name
-    from flask_playground_poc.models.User import User
+    from fastapi_playground_poc.models.User import User
 
     logger.info(f"User model tablename: {User.__tablename__}")
 

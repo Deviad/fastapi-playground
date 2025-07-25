@@ -4,10 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from flask_playground_poc.db import get_db
-from flask_playground_poc.models.User import User
-from flask_playground_poc.models.UserInfo import UserInfo
-from flask_playground_poc.schemas import UserCreate, UserResponse
+from fastapi_playground_poc.db import get_db
+from fastapi_playground_poc.models.User import User
+from fastapi_playground_poc.models.UserInfo import UserInfo
+from fastapi_playground_poc.schemas import UserCreate, UserResponse
 
 router = APIRouter()
 

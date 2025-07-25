@@ -3,7 +3,7 @@ Global exception handlers for the FastAPI application.
 Similar to Spring's @ControllerAdvice, this provides centralized exception handling.
 
 Usage in app.py:
-    from flask_playground_poc.exception_handlers import register_exception_handlers
+    from fastapi_playground_poc.exception_handlers import register_exception_handlers
     register_exception_handlers(app)
 """
 

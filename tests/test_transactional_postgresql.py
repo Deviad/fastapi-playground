@@ -9,16 +9,16 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 
-from flask_playground_poc.transactional import (
+from fastapi_playground_poc.transactional import (
     Transactional, Propagation, IsolationLevel,
     get_current_session, is_transaction_active,
     transactional, read_only_transaction, requires_new_transaction
 )
-from flask_playground_poc.models.User import User
-from flask_playground_poc.models.UserInfo import UserInfo
-from flask_playground_poc.models.Course import Course
-from flask_playground_poc.models.Enrollment import Enrollment
-from flask_playground_poc.schemas import UserCreate, CourseCreate
+from fastapi_playground_poc.models.User import User
+from fastapi_playground_poc.models.UserInfo import UserInfo
+from fastapi_playground_poc.models.Course import Course
+from fastapi_playground_poc.models.Enrollment import Enrollment
+from fastapi_playground_poc.schemas import UserCreate, CourseCreate
 
 from .test_transactional_base import (
     TestTransactionalDecoratorBase,
@@ -76,7 +76,7 @@ async def postgresql_test_engine():
     )
     
     # Create tables in test schema
-    from flask_playground_poc.db import Base
+    from fastapi_playground_poc.db import Base
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -120,7 +120,7 @@ async def mock_postgresql_db(postgresql_test_session):
             pass
     
     # Patch the get_db import in the transactional module
-    with patch('flask_playground_poc.transactional.get_db', test_get_db):
+    with patch('fastapi_playground_poc.transactional.get_db', test_get_db):
         yield postgresql_test_session
 
 
@@ -164,7 +164,7 @@ class TestPostgreSQLSpecificBehavior:
         async def test_func(db: AsyncSession):
             return "read_only_test"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(postgresql_mock_session)
             
             result = await test_func()
@@ -189,7 +189,7 @@ class TestPostgreSQLSpecificBehavior:
             async def test_func(db: AsyncSession):
                 return f"isolation_{isolation_level.value.lower().replace(' ', '_')}"
             
-            with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+            with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
                 mock_get_db.side_effect = mock_get_db_factory(postgresql_mock_session)
                 
                 result = await test_func()
@@ -219,7 +219,7 @@ class TestPostgreSQLSpecificBehavior:
             async def test_func(db: AsyncSession):
                 return "isolation_test"
             
-            with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+            with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
                 mock_get_db.side_effect = mock_get_db_factory(postgresql_mock_session)
                 
                 result = await test_func()
@@ -242,7 +242,7 @@ class TestPostgreSQLSpecificBehavior:
         async def test_func(db: AsyncSession):
             return "combined_test"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(postgresql_mock_session)
             
             result = await test_func()
@@ -260,7 +260,7 @@ class TestPostgreSQLSpecificBehavior:
         async def test_func(db: AsyncSession):
             return "string_isolation_test"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(postgresql_mock_session)
             
             result = await test_func()
@@ -296,7 +296,7 @@ class TestPostgreSQLAdvancedFeatures:
             await asyncio.sleep(0.1)  # Short operation
             return "serializable_with_timeout"
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(postgresql_mock_session)
             
             result = await test_func()
@@ -337,7 +337,7 @@ class TestPostgreSQLAdvancedFeatures:
         
         service = ReportService()
         
-        with patch('flask_playground_poc.transactional.get_db') as mock_get_db:
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
             mock_get_db.side_effect = mock_get_db_factory(postgresql_mock_session)
             
             result = await service.generate_report()
@@ -388,7 +388,7 @@ class TestConvenienceDecoratorsPostgreSQL:
                 finally:
                     await session.close()
         
-        with patch('flask_playground_poc.transactional.get_db', test_get_db):
+        with patch('fastapi_playground_poc.transactional.get_db', test_get_db):
             @requires_new_transaction
             async def create_independent_user(db: AsyncSession, name: str) -> User:
                 user = User(name=name)
@@ -478,7 +478,7 @@ class TestConvenienceDecoratorsPostgreSQL:
         async def mock_get_db():
             yield mock_session
         
-        with patch('flask_playground_poc.transactional.get_db', mock_get_db):
+        with patch('fastapi_playground_poc.transactional.get_db', mock_get_db):
             
             # Test all 4 isolation levels with enum format
             @Transactional(isolation_level=IsolationLevel.READ_UNCOMMITTED)
@@ -612,7 +612,7 @@ class TestServiceLayerIntegrationPostgreSQL:
                 finally:
                     await session.close()
         
-        with patch('flask_playground_poc.transactional.get_db', test_get_db):
+        with patch('fastapi_playground_poc.transactional.get_db', test_get_db):
             
             @Transactional(propagation=Propagation.REQUIRES_NEW)
             async def create_audit_entry(db: AsyncSession, user_name: str) -> User:

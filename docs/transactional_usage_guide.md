@@ -30,7 +30,7 @@ The `@Transactional` decorator provides automatic transaction management for you
 ### Simple Transaction
 
 ```python
-from flask_playground_poc.transactional import Transactional
+from fastapi_playground_poc.transactional import Transactional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 class UserService:
@@ -59,7 +59,7 @@ async def create_user(user_data: UserCreate):
 ### Convenience Decorators
 
 ```python
-from flask_playground_poc.transactional import transactional, read_only_transaction
+from fastapi_playground_poc.transactional import transactional, read_only_transaction
 
 # Simple transaction with defaults
 @transactional
@@ -299,7 +299,7 @@ async def long_running_operation(self, db: AsyncSession, data: dict):
 
 ```
 src/
-  flask_playground_poc/
+  fastapi_playground_poc/
     services/
       __init__.py
       user_service.py
@@ -316,7 +316,7 @@ src/
 
 ```python
 # services/user_service.py
-from flask_playground_poc.transactional import Transactional, Propagation
+from fastapi_playground_poc.transactional import Transactional, Propagation
 
 class UserService:
     def __init__(self):
@@ -588,7 +588,7 @@ async def test_rollback():
 
 ### Manual Transaction Control
 ```python
-from flask_playground_poc.transactional import mark_rollback_only
+from fastapi_playground_poc.transactional import mark_rollback_only
 
 @Transactional()
 async def conditional_operation(db: AsyncSession, data: dict):
@@ -605,7 +605,7 @@ async def conditional_operation(db: AsyncSession, data: dict):
 ### Context Manager Support
 ```python
 # For manual transaction control when decorator isn't suitable
-from flask_playground_poc.db import get_db
+from fastapi_playground_poc.db import get_db
 
 async def manual_transaction_example():
     db_gen = get_db()

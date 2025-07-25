@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 
-from flask_playground_poc.db import get_db
+from fastapi_playground_poc.db import get_db
 
 
 # Configure logging
