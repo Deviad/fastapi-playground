@@ -27,6 +27,7 @@ from .test_transactional_base import (
     TestContextFunctionsBase,
     async_generator_from_session,
     mock_get_db_factory,
+    assert_sql_command_executed,
     CustomException,
     NonRollbackException,
     UserService,
@@ -170,10 +171,7 @@ class TestPostgreSQLSpecificBehavior:
             assert result == "read_only_test"
             
             # Verify that SET TRANSACTION READ ONLY was called for PostgreSQL
-            # Check the actual call argument's text content
-            assert postgresql_mock_session.execute.called
-            call_arg = postgresql_mock_session.execute.call_args[0][0]
-            assert str(call_arg.text) == "SET TRANSACTION READ ONLY"
+            assert_sql_command_executed(postgresql_mock_session, "SET TRANSACTION READ ONLY")
     
     @pytest.mark.asyncio
     async def test_all_isolation_levels_postgresql(self, postgresql_mock_session):
@@ -200,9 +198,7 @@ class TestPostgreSQLSpecificBehavior:
                 
                 # Verify the correct SQL command was executed
                 expected_sql = f"SET TRANSACTION ISOLATION LEVEL {isolation_level.value}"
-                assert postgresql_mock_session.execute.called
-                call_arg = postgresql_mock_session.execute.call_args[0][0]
-                assert str(call_arg.text) == expected_sql
+                assert_sql_command_executed(postgresql_mock_session, expected_sql)
                 
                 # Reset for next iteration
                 postgresql_mock_session.reset_mock()
@@ -230,9 +226,7 @@ class TestPostgreSQLSpecificBehavior:
                 assert result == "isolation_test"
                 
                 # Verify the correct SQL command was executed
-                assert postgresql_mock_session.execute.called
-                call_arg = postgresql_mock_session.execute.call_args[0][0]
-                assert str(call_arg.text) == expected_sql
+                assert_sql_command_executed(postgresql_mock_session, expected_sql)
                 
                 # Reset for next test case
                 postgresql_mock_session.reset_mock()
@@ -255,11 +249,8 @@ class TestPostgreSQLSpecificBehavior:
             assert result == "combined_test"
             
             # Verify both SQL commands were executed
-            assert postgresql_mock_session.execute.called
-            call_args_list = postgresql_mock_session.execute.call_args_list
-            executed_commands = [str(call[0][0].text) for call in call_args_list]
-            assert "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE" in executed_commands
-            assert "SET TRANSACTION READ ONLY" in executed_commands
+            assert_sql_command_executed(postgresql_mock_session, "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+            assert_sql_command_executed(postgresql_mock_session, "SET TRANSACTION READ ONLY")
     
     @pytest.mark.asyncio
     async def test_string_isolation_level_postgresql(self, postgresql_mock_session):
@@ -276,9 +267,7 @@ class TestPostgreSQLSpecificBehavior:
             assert result == "string_isolation_test"
             
             # Verify the correct SQL command was executed
-            assert postgresql_mock_session.execute.called
-            call_arg = postgresql_mock_session.execute.call_args[0][0]
-            assert str(call_arg.text) == "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"
+            assert_sql_command_executed(postgresql_mock_session, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
 
 
 class TestPostgreSQLAdvancedFeatures:
@@ -314,11 +303,8 @@ class TestPostgreSQLAdvancedFeatures:
             assert result == "serializable_with_timeout"
             
             # Verify all settings were applied
-            assert postgresql_mock_session.execute.called
-            call_args_list = postgresql_mock_session.execute.call_args_list
-            executed_commands = [str(call[0][0].text) for call in call_args_list]
-            assert "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE" in executed_commands
-            assert "SET TRANSACTION READ ONLY" in executed_commands
+            assert_sql_command_executed(postgresql_mock_session, "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+            assert_sql_command_executed(postgresql_mock_session, "SET TRANSACTION READ ONLY")
     
     @pytest.mark.asyncio
     async def test_complex_nested_transactions_postgresql(self, postgresql_mock_session):
@@ -358,9 +344,7 @@ class TestPostgreSQLAdvancedFeatures:
             assert result == "report_based_on_analyzed_data_read"
             
             # Verify the outer transaction's isolation level was set
-            assert postgresql_mock_session.execute.called
-            call_arg = postgresql_mock_session.execute.call_args[0][0]
-            assert str(call_arg.text) == "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"
+            assert_sql_command_executed(postgresql_mock_session, "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 
 
 class TestConvenienceDecoratorsPostgreSQL:

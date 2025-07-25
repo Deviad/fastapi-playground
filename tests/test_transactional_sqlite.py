@@ -27,6 +27,7 @@ from .test_transactional_base import (
     TestContextFunctionsBase,
     async_generator_from_session,
     mock_get_db_factory,
+    assert_sql_command_executed,
     CustomException,
     NonRollbackException,
     UserService,
@@ -163,9 +164,7 @@ class TestSQLiteSpecificBehavior:
             assert result == "isolation_test"
             
             # Verify the correct SQL command was executed
-            assert sqlite_mock_session.execute.called
-            call_arg = sqlite_mock_session.execute.call_args[0][0]
-            assert str(call_arg.text) == "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"
+            assert_sql_command_executed(sqlite_mock_session, "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
     
     @pytest.mark.asyncio
     async def test_all_isolation_levels_sqlite(self, sqlite_mock_session):
@@ -192,9 +191,7 @@ class TestSQLiteSpecificBehavior:
                 
                 # Verify the correct SQL command was executed
                 expected_sql = f"SET TRANSACTION ISOLATION LEVEL {isolation_level.value}"
-                assert sqlite_mock_session.execute.called
-                call_arg = sqlite_mock_session.execute.call_args[0][0]
-                assert str(call_arg.text) == expected_sql
+                assert_sql_command_executed(sqlite_mock_session, expected_sql)
                 
                 # Reset for next iteration
                 sqlite_mock_session.reset_mock()
