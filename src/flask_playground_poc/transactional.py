@@ -155,8 +155,8 @@ def Transactional(
                     raise TransactionRequiredError(
                         f"Transaction required for method {func.__name__} with MANDATORY propagation"
                     )
-                # Use existing transaction
-                return await func(*args, **kwargs)
+                # Use existing transaction - inject session if needed
+                return await _inject_session_if_needed(func, args, kwargs, current_context.session)
             
             elif propagation == Propagation.NEVER:
                 if current_context:
@@ -180,8 +180,8 @@ def Transactional(
             
             elif propagation == Propagation.SUPPORTS:
                 if current_context:
-                    # Join existing transaction
-                    return await func(*args, **kwargs)
+                    # Join existing transaction - inject session if needed
+                    return await _inject_session_if_needed(func, args, kwargs, current_context.session)
                 else:
                     # No transaction, execute without one
                     return await func(*args, **kwargs)
@@ -209,6 +209,26 @@ def Transactional(
         
         return wrapper
     return decorator
+
+
+async def _inject_session_if_needed(func, args, kwargs, session):
+    """Helper function to inject session into function arguments if needed"""
+    # Get function signature to determine injection point
+    sig = inspect.signature(func)
+    params = list(sig.parameters.keys())
+    
+    # Check if this is a method (has 'self') or function
+    has_self = params and params[0] == 'self'
+    injection_index = 1 if has_self else 0
+    
+    # Check if session already provided (avoid double injection)
+    if len(args) > injection_index and isinstance(args[injection_index], AsyncSession):
+        return await func(*args, **kwargs)
+    else:
+        # Inject session into function arguments
+        new_args = list(args)
+        new_args.insert(injection_index, session)
+        return await func(*new_args, **kwargs)
 
 
 async def _execute_in_new_transaction(
@@ -290,11 +310,8 @@ async def _execute_in_new_transaction(
             _transaction_context.reset(token)
     
     finally:
-        # Properly close the generator
-        try:
-            await anext(db_generator)
-        except StopAsyncIteration:
-            pass
+        # Properly close the generator by calling aclose()
+        await db_generator.aclose()
 
 
 async def _execute_in_nested_transaction(
