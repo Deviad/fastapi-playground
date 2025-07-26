@@ -8,6 +8,8 @@ Uses original models with consistent autoincrement behavior.
 
 import pytest
 import asyncio
+import contextlib
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
@@ -20,6 +22,7 @@ from tests.test_config import (
     drop_test_tables,
     TestAsyncSessionLocal,
 )
+from tests.test_transactional_base import mock_get_db_factory
 
 # Import original models to ensure they're registered
 from fastapi_playground_poc.models.User import User
@@ -280,3 +283,27 @@ async def multiple_courses(test_db: AsyncSession):
         await test_db.refresh(course)
 
     return courses
+
+
+@pytest.fixture
+def mock_transactional_db(test_db: AsyncSession):
+    """
+    Fixture that provides a context manager for mocking @Transactional decorator.
+    
+    This centralizes the repetitive pattern of:
+    with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
+        mock_get_db.side_effect = mock_get_db_factory(test_db)
+        
+    Usage:
+    def test_something(test_client, mock_transactional_db):
+        with mock_transactional_db:
+            response = test_client.post("/user", json=user_data)
+            assert response.status_code == 200
+    """
+    @contextlib.contextmanager
+    def mock_context():
+        with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
+            mock_get_db.side_effect = mock_get_db_factory(test_db)
+            yield
+    
+    return mock_context()

@@ -19,7 +19,7 @@ class TestCourseEndpoints:
     """Test class for course-related endpoints."""
 
     @pytest.mark.unit
-    def test_create_course_success(self, test_client: TestClient):
+    def test_create_course_success(self, test_client: TestClient, mock_transactional_db):
         """Test successful course creation."""
         course_data = {
             "name": "Advanced Python Programming",
@@ -27,7 +27,8 @@ class TestCourseEndpoints:
             "price": "199.99",
         }
 
-        response = test_client.post("/course", json=course_data)
+        with mock_transactional_db:
+            response = test_client.post("/course", json=course_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -65,11 +66,12 @@ class TestCourseEndpoints:
         assert response.status_code == 422  # Validation error
 
     @pytest.mark.unit
-    def test_get_course_by_id_success(self, test_client: TestClient, sample_course):
+    def test_get_course_by_id_success(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test retrieving a course by ID."""
         course_id = sample_course.id
 
-        response = test_client.get(f"/course/{course_id}")
+        with mock_transactional_db:
+            response = test_client.get(f"/course/{course_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -82,11 +84,12 @@ class TestCourseEndpoints:
         assert isinstance(data["users"], list)
 
     @pytest.mark.unit
-    def test_get_course_by_id_not_found(self, test_client: TestClient):
+    def test_get_course_by_id_not_found(self, test_client: TestClient, mock_transactional_db):
         """Test retrieving a non-existent course."""
         non_existent_id = 99999
 
-        response = test_client.get(f"/course/{non_existent_id}")
+        with mock_transactional_db:
+            response = test_client.get(f"/course/{non_existent_id}")
 
         assert response.status_code == 404
         data = response.json()
@@ -94,9 +97,10 @@ class TestCourseEndpoints:
         assert "not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_get_all_courses_empty(self, test_client: TestClient):
+    def test_get_all_courses_empty(self, test_client: TestClient, mock_transactional_db):
         """Test retrieving all courses when database is empty."""
-        response = test_client.get("/courses")
+        with mock_transactional_db:
+            response = test_client.get("/courses")
 
         assert response.status_code == 200
         data = response.json()
@@ -104,9 +108,10 @@ class TestCourseEndpoints:
         assert len(data) == 0
 
     @pytest.mark.unit
-    def test_get_all_courses_with_data(self, test_client: TestClient, multiple_courses):
+    def test_get_all_courses_with_data(self, test_client: TestClient, multiple_courses, mock_transactional_db):
         """Test retrieving all courses when courses exist."""
-        response = test_client.get("/courses")
+        with mock_transactional_db:
+            response = test_client.get("/courses")
 
         assert response.status_code == 200
         data = response.json()
@@ -122,7 +127,7 @@ class TestCourseEndpoints:
             assert "price" in course_data
 
     @pytest.mark.unit
-    def test_update_course_success(self, test_client: TestClient, sample_course):
+    def test_update_course_success(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test successful course update."""
         course_id = sample_course.id
         update_data = {
@@ -131,7 +136,8 @@ class TestCourseEndpoints:
             # author_name not updated
         }
 
-        response = test_client.put(f"/course/{course_id}", json=update_data)
+        with mock_transactional_db:
+            response = test_client.put(f"/course/{course_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -142,12 +148,13 @@ class TestCourseEndpoints:
         assert data["author_name"] == sample_course.author_name  # Unchanged
 
     @pytest.mark.unit
-    def test_update_course_partial(self, test_client: TestClient, sample_course):
+    def test_update_course_partial(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test partial course update (only one field)."""
         course_id = sample_course.id
         update_data = {"price": "149.99"}
 
-        response = test_client.put(f"/course/{course_id}", json=update_data)
+        with mock_transactional_db:
+            response = test_client.put(f"/course/{course_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -158,12 +165,13 @@ class TestCourseEndpoints:
         assert data["author_name"] == sample_course.author_name  # Unchanged
 
     @pytest.mark.unit
-    def test_update_course_not_found(self, test_client: TestClient):
+    def test_update_course_not_found(self, test_client: TestClient, mock_transactional_db):
         """Test updating a non-existent course."""
         non_existent_id = 99999
         update_data = {"name": "Updated Course"}
 
-        response = test_client.put(f"/course/{non_existent_id}", json=update_data)
+        with mock_transactional_db:
+            response = test_client.put(f"/course/{non_existent_id}", json=update_data)
 
         assert response.status_code == 404
         data = response.json()
@@ -171,27 +179,29 @@ class TestCourseEndpoints:
         assert "not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_delete_course_success(self, test_client: TestClient, sample_course):
+    def test_delete_course_success(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test successful course deletion."""
         course_id = sample_course.id
 
-        response = test_client.delete(f"/course/{course_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/course/{course_id}")
 
-        assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
-        assert str(course_id) in data["message"]
+            assert response.status_code == 200
+            data = response.json()
+            assert "message" in data
+            assert str(course_id) in data["message"]
 
-        # Verify course is actually deleted
-        get_response = test_client.get(f"/course/{course_id}")
-        assert get_response.status_code == 404
+            # Verify course is actually deleted
+            get_response = test_client.get(f"/course/{course_id}")
+            assert get_response.status_code == 404
 
     @pytest.mark.unit
-    def test_delete_course_not_found(self, test_client: TestClient):
+    def test_delete_course_not_found(self, test_client: TestClient, mock_transactional_db):
         """Test deleting a non-existent course."""
         non_existent_id = 99999
 
-        response = test_client.delete(f"/course/{non_existent_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/course/{non_existent_id}")
 
         assert response.status_code == 404
         data = response.json()
@@ -199,7 +209,7 @@ class TestCourseEndpoints:
         assert "not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_course_price_precision(self, test_client: TestClient):
+    def test_course_price_precision(self, test_client: TestClient, mock_transactional_db):
         """Test that course prices maintain proper decimal precision."""
         course_data = {
             "name": "Precision Test Course",
@@ -207,7 +217,8 @@ class TestCourseEndpoints:
             "price": "123.45",
         }
 
-        response = test_client.post("/course", json=course_data)
+        with mock_transactional_db:
+            response = test_client.post("/course", json=course_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -216,7 +227,7 @@ class TestCourseEndpoints:
         assert data["price"] == "123.45"
 
     @pytest.mark.unit
-    def test_course_data_types(self, test_client: TestClient):
+    def test_course_data_types(self, test_client: TestClient, mock_transactional_db):
         """Test that course endpoints return correct data types."""
         course_data = {
             "name": "Data Types Test",
@@ -224,7 +235,9 @@ class TestCourseEndpoints:
             "price": "99.99",
         }
 
-        response = test_client.post("/course", json=course_data)
+        with mock_transactional_db:
+            response = test_client.post("/course", json=course_data)
+        
         assert response.status_code == 200
         data = response.json()
 
@@ -235,7 +248,7 @@ class TestCourseEndpoints:
         assert isinstance(data["price"], str)  # Decimal is serialized as string
 
     @pytest.mark.unit
-    def test_course_with_special_characters(self, test_client: TestClient):
+    def test_course_with_special_characters(self, test_client: TestClient, mock_transactional_db):
         """Test course creation with special characters."""
         course_data = {
             "name": "Français & Español Programming 🚀",
@@ -243,7 +256,8 @@ class TestCourseEndpoints:
             "price": "199.99",
         }
 
-        response = test_client.post("/course", json=course_data)
+        with mock_transactional_db:
+            response = test_client.post("/course", json=course_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -252,14 +266,15 @@ class TestCourseEndpoints:
         assert data["author_name"] == course_data["author_name"]
 
     @pytest.mark.unit
-    def test_course_update_empty_data(self, test_client: TestClient, sample_course):
+    def test_course_update_empty_data(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test course update with empty data (should not change anything)."""
         course_id = sample_course.id
         original_name = sample_course.name
         original_author = sample_course.author_name
         original_price = sample_course.price
 
-        response = test_client.put(f"/course/{course_id}", json={})
+        with mock_transactional_db:
+            response = test_client.put(f"/course/{course_id}", json={})
 
         assert response.status_code == 200
         data = response.json()
@@ -274,12 +289,13 @@ class TestEnrollmentEndpoints:
     """Test class for enrollment/unenrollment endpoints."""
 
     @pytest.mark.unit
-    def test_enroll_user_in_course_success(self, test_client: TestClient, sample_user, sample_course):
+    def test_enroll_user_in_course_success(self, test_client: TestClient, sample_user, sample_course, mock_transactional_db):
         """Test successful user enrollment in course."""
         user_id = sample_user.id
         course_id = sample_course.id
 
-        response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -290,12 +306,13 @@ class TestEnrollmentEndpoints:
         assert "id" in data
 
     @pytest.mark.unit
-    def test_enroll_user_not_found(self, test_client: TestClient, sample_course):
+    def test_enroll_user_not_found(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test enrollment with non-existent user."""
         non_existent_user_id = 99999
         course_id = sample_course.id
 
-        response = test_client.post(f"/user/{non_existent_user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.post(f"/user/{non_existent_user_id}/enroll/{course_id}")
 
         assert response.status_code == 404
         data = response.json()
@@ -303,12 +320,13 @@ class TestEnrollmentEndpoints:
         assert "user not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_enroll_course_not_found(self, test_client: TestClient, sample_user):
+    def test_enroll_course_not_found(self, test_client: TestClient, sample_user, mock_transactional_db):
         """Test enrollment with non-existent course."""
         user_id = sample_user.id
         non_existent_course_id = 99999
 
-        response = test_client.post(f"/user/{user_id}/enroll/{non_existent_course_id}")
+        with mock_transactional_db:
+            response = test_client.post(f"/user/{user_id}/enroll/{non_existent_course_id}")
 
         assert response.status_code == 404
         data = response.json()
@@ -316,13 +334,14 @@ class TestEnrollmentEndpoints:
         assert "course not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_enroll_duplicate_enrollment(self, test_client: TestClient, sample_enrollment):
+    def test_enroll_duplicate_enrollment(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test duplicate enrollment (should return 409 Conflict)."""
         user_id = sample_enrollment.user_id
         course_id = sample_enrollment.course_id
 
         # Try to enroll the same user in the same course again
-        response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
 
         assert response.status_code == 409
         data = response.json()
@@ -330,31 +349,33 @@ class TestEnrollmentEndpoints:
         assert "already enrolled" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_unenroll_user_from_course_success(self, test_client: TestClient, sample_enrollment):
+    def test_unenroll_user_from_course_success(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test successful user unenrollment from course."""
         user_id = sample_enrollment.user_id
         course_id = sample_enrollment.course_id
 
-        response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
 
-        assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
-        assert str(user_id) in data["message"]
-        assert str(course_id) in data["message"]
+            assert response.status_code == 200
+            data = response.json()
+            assert "message" in data
+            assert str(user_id) in data["message"]
+            assert str(course_id) in data["message"]
 
-        # Verify enrollment is actually deleted by trying to unenroll again
-        response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
-        assert response.status_code == 404
+            # Verify enrollment is actually deleted by trying to unenroll again
+            response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
+            assert response.status_code == 404
 
     @pytest.mark.unit
-    def test_unenroll_enrollment_not_found(self, test_client: TestClient, sample_user, sample_course):
+    def test_unenroll_enrollment_not_found(self, test_client: TestClient, sample_user, sample_course, mock_transactional_db):
         """Test unenrollment when enrollment doesn't exist."""
         user_id = sample_user.id
         course_id = sample_course.id
 
         # Try to unenroll when no enrollment exists
-        response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
 
         assert response.status_code == 404
         data = response.json()
@@ -362,12 +383,13 @@ class TestEnrollmentEndpoints:
         assert "enrollment not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_unenroll_nonexistent_user(self, test_client: TestClient, sample_course):
+    def test_unenroll_nonexistent_user(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test unenrollment with non-existent user (should still check enrollment)."""
         non_existent_user_id = 99999
         course_id = sample_course.id
 
-        response = test_client.delete(f"/user/{non_existent_user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/user/{non_existent_user_id}/enroll/{course_id}")
 
         assert response.status_code == 404
         data = response.json()
@@ -375,12 +397,13 @@ class TestEnrollmentEndpoints:
         assert "enrollment not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_unenroll_nonexistent_course(self, test_client: TestClient, sample_user):
+    def test_unenroll_nonexistent_course(self, test_client: TestClient, sample_user, mock_transactional_db):
         """Test unenrollment with non-existent course (should still check enrollment)."""
         user_id = sample_user.id
         non_existent_course_id = 99999
 
-        response = test_client.delete(f"/user/{user_id}/enroll/{non_existent_course_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/user/{user_id}/enroll/{non_existent_course_id}")
 
         assert response.status_code == 404
         data = response.json()
@@ -392,11 +415,12 @@ class TestCourseUserRelationshipEndpoints:
     """Test class for course-user relationship endpoints."""
 
     @pytest.mark.unit
-    def test_get_user_courses_success(self, test_client: TestClient, sample_enrollment):
+    def test_get_user_courses_success(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test retrieving user with enrolled courses."""
         user_id = sample_enrollment.user_id
 
-        response = test_client.get(f"/user/{user_id}/courses")
+        with mock_transactional_db:
+            response = test_client.get(f"/user/{user_id}/courses")
 
         assert response.status_code == 200
         data = response.json()
@@ -410,11 +434,12 @@ class TestCourseUserRelationshipEndpoints:
         assert data["courses"][0]["id"] == sample_enrollment.course_id
 
     @pytest.mark.unit
-    def test_get_user_courses_no_enrollments(self, test_client: TestClient, sample_user):
+    def test_get_user_courses_no_enrollments(self, test_client: TestClient, sample_user, mock_transactional_db):
         """Test retrieving user with no enrolled courses."""
         user_id = sample_user.id
 
-        response = test_client.get(f"/user/{user_id}/courses")
+        with mock_transactional_db:
+            response = test_client.get(f"/user/{user_id}/courses")
 
         assert response.status_code == 200
         data = response.json()
@@ -425,11 +450,12 @@ class TestCourseUserRelationshipEndpoints:
         assert len(data["courses"]) == 0
 
     @pytest.mark.unit
-    def test_get_user_courses_user_not_found(self, test_client: TestClient):
+    def test_get_user_courses_user_not_found(self, test_client: TestClient, mock_transactional_db):
         """Test retrieving courses for non-existent user."""
         non_existent_user_id = 99999
 
-        response = test_client.get(f"/user/{non_existent_user_id}/courses")
+        with mock_transactional_db:
+            response = test_client.get(f"/user/{non_existent_user_id}/courses")
 
         assert response.status_code == 404
         data = response.json()
@@ -437,11 +463,12 @@ class TestCourseUserRelationshipEndpoints:
         assert "user not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_get_course_users_success(self, test_client: TestClient, sample_enrollment):
+    def test_get_course_users_success(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test retrieving course with enrolled users."""
         course_id = sample_enrollment.course_id
 
-        response = test_client.get(f"/course/{course_id}/users")
+        with mock_transactional_db:
+            response = test_client.get(f"/course/{course_id}/users")
 
         assert response.status_code == 200
         data = response.json()
@@ -456,11 +483,12 @@ class TestCourseUserRelationshipEndpoints:
         assert data["users"][0]["id"] == sample_enrollment.user_id
 
     @pytest.mark.unit
-    def test_get_course_users_no_enrollments(self, test_client: TestClient, sample_course):
+    def test_get_course_users_no_enrollments(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test retrieving course with no enrolled users."""
         course_id = sample_course.id
 
-        response = test_client.get(f"/course/{course_id}/users")
+        with mock_transactional_db:
+            response = test_client.get(f"/course/{course_id}/users")
 
         assert response.status_code == 200
         data = response.json()
@@ -471,11 +499,12 @@ class TestCourseUserRelationshipEndpoints:
         assert len(data["users"]) == 0
 
     @pytest.mark.unit
-    def test_get_course_users_course_not_found(self, test_client: TestClient):
+    def test_get_course_users_course_not_found(self, test_client: TestClient, mock_transactional_db):
         """Test retrieving users for non-existent course."""
         non_existent_course_id = 99999
 
-        response = test_client.get(f"/course/{non_existent_course_id}/users")
+        with mock_transactional_db:
+            response = test_client.get(f"/course/{non_existent_course_id}/users")
 
         assert response.status_code == 404
         data = response.json()
@@ -483,7 +512,7 @@ class TestCourseUserRelationshipEndpoints:
         assert "course not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_multiple_enrollments_workflow(self, test_client: TestClient, sample_data):
+    def test_multiple_enrollments_workflow(self, test_client: TestClient, sample_data, mock_transactional_db):
         """Test workflow with multiple users and courses."""
         users = sample_data["users"]
         courses = sample_data["courses"]
@@ -493,31 +522,32 @@ class TestCourseUserRelationshipEndpoints:
         course1_id = courses[0].id
         course2_id = courses[1].id
 
-        # Enroll user1 in course2 (user1 already enrolled in course1 via sample_data)
-        response = test_client.post(f"/user/{user1_id}/enroll/{course2_id}")
-        assert response.status_code == 200
+        with mock_transactional_db:
+            # Enroll user1 in course2 (user1 already enrolled in course1 via sample_data)
+            response = test_client.post(f"/user/{user1_id}/enroll/{course2_id}")
+            assert response.status_code == 200
 
-        # Check user1 courses (should have both courses)
-        response = test_client.get(f"/user/{user1_id}/courses")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["courses"]) == 2
+            # Check user1 courses (should have both courses)
+            response = test_client.get(f"/user/{user1_id}/courses")
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data["courses"]) == 2
 
-        # Check course1 users (should have user1 only)
-        response = test_client.get(f"/course/{course1_id}/users")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["users"]) == 1
-        assert data["users"][0]["id"] == user1_id
+            # Check course1 users (should have user1 only)
+            response = test_client.get(f"/course/{course1_id}/users")
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data["users"]) == 1
+            assert data["users"][0]["id"] == user1_id
 
-        # Check course2 users (should have user1 and user2)
-        response = test_client.get(f"/course/{course2_id}/users")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["users"]) == 2
-        user_ids = [user["id"] for user in data["users"]]
-        assert user1_id in user_ids
-        assert user2_id in user_ids
+            # Check course2 users (should have user1 and user2)
+            response = test_client.get(f"/course/{course2_id}/users")
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data["users"]) == 2
+            user_ids = [user["id"] for user in data["users"]]
+            assert user1_id in user_ids
+            assert user2_id in user_ids
 
 
 class TestCourseRoutesCoverageEnhancement:
@@ -529,9 +559,10 @@ class TestCourseRoutesCoverageEnhancement:
         ({"name": "High Price Course", "author_name": "Premium Author", "price": "999.99"}, 200),
     ])
     @pytest.mark.unit
-    def test_create_course_parameterized(self, test_client: TestClient, course_data, expected_status):
+    def test_create_course_parameterized(self, test_client: TestClient, course_data, expected_status, mock_transactional_db):
         """Test course creation with various valid inputs to hit refresh logic."""
-        response = test_client.post("/course", json=course_data)
+        with mock_transactional_db:
+            response = test_client.post("/course", json=course_data)
         
         assert response.status_code == expected_status
         if expected_status == 200:
@@ -549,13 +580,14 @@ class TestCourseRoutesCoverageEnhancement:
         (0, 404, False),  # Invalid zero ID
     ])
     @pytest.mark.unit
-    def test_get_course_parameterized(self, test_client: TestClient, sample_course, course_id, expected_status, should_have_data):
+    def test_get_course_parameterized(self, test_client: TestClient, sample_course, course_id, expected_status, should_have_data, mock_transactional_db):
         """Test get course with various IDs to hit all error paths."""
         # Use actual course ID for valid test case
         if course_id == 1:
             course_id = sample_course.id
             
-        response = test_client.get(f"/course/{course_id}")
+        with mock_transactional_db:
+            response = test_client.get(f"/course/{course_id}")
         
         assert response.status_code == expected_status
         data = response.json()
@@ -570,9 +602,10 @@ class TestCourseRoutesCoverageEnhancement:
             # This hits lines 51-52 (error path)
 
     @pytest.mark.unit
-    def test_get_all_courses_coverage(self, test_client: TestClient, multiple_courses):
+    def test_get_all_courses_coverage(self, test_client: TestClient, multiple_courses, mock_transactional_db):
         """Test get all courses to ensure return logic is covered."""
-        response = test_client.get("/courses")
+        with mock_transactional_db:
+            response = test_client.get("/courses")
         
         assert response.status_code == 200
         data = response.json()
@@ -588,11 +621,12 @@ class TestCourseRoutesCoverageEnhancement:
         ({}, 200),  # Empty update should succeed
     ])
     @pytest.mark.unit
-    def test_update_course_parameterized(self, test_client: TestClient, sample_course, update_data, expected_status):
+    def test_update_course_parameterized(self, test_client: TestClient, sample_course, update_data, expected_status, mock_transactional_db):
         """Test course updates with various data to hit update logic."""
         course_id = sample_course.id
         
-        response = test_client.put(f"/course/{course_id}", json=update_data)
+        with mock_transactional_db:
+            response = test_client.put(f"/course/{course_id}", json=update_data)
         
         assert response.status_code == expected_status
         data = response.json()
@@ -600,9 +634,10 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 72-84 (update logic with refresh)
 
     @pytest.mark.unit
-    def test_update_nonexistent_course_coverage(self, test_client: TestClient):
+    def test_update_nonexistent_course_coverage(self, test_client: TestClient, mock_transactional_db):
         """Test updating non-existent course to hit error path."""
-        response = test_client.put("/course/99999", json={"name": "Updated"})
+        with mock_transactional_db:
+            response = test_client.put("/course/99999", json={"name": "Updated"})
         
         assert response.status_code == 404
         data = response.json()
@@ -611,11 +646,12 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 74-75 (course not found error)
 
     @pytest.mark.unit
-    def test_delete_course_coverage(self, test_client: TestClient, sample_course):
+    def test_delete_course_coverage(self, test_client: TestClient, sample_course, mock_transactional_db):
         """Test course deletion to hit deletion logic."""
         course_id = sample_course.id
         
-        response = test_client.delete(f"/course/{course_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/course/{course_id}")
         
         assert response.status_code == 200
         data = response.json()
@@ -624,9 +660,10 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 92-100 (delete logic)
 
     @pytest.mark.unit
-    def test_delete_nonexistent_course_coverage(self, test_client: TestClient):
+    def test_delete_nonexistent_course_coverage(self, test_client: TestClient, mock_transactional_db):
         """Test deleting non-existent course to hit error path."""
-        response = test_client.delete("/course/99999")
+        with mock_transactional_db:
+            response = test_client.delete("/course/99999")
         
         assert response.status_code == 404
         data = response.json()
@@ -641,12 +678,13 @@ class TestCourseRoutesCoverageEnhancement:
     ])
     @pytest.mark.unit
     def test_enroll_user_validation_paths(self, test_client: TestClient, sample_user, sample_course,
-                                        user_exists, course_exists, expect_user_error, expect_course_error):
+                                        user_exists, course_exists, expect_user_error, expect_course_error, mock_transactional_db):
         """Test enrollment with various user/course existence scenarios."""
         user_id = sample_user.id if user_exists else 99999
         course_id = sample_course.id if course_exists else 99998
         
-        response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
         
         if expect_user_error:
             assert response.status_code == 404
@@ -666,12 +704,13 @@ class TestCourseRoutesCoverageEnhancement:
             # This hits lines 122-133 (successful enrollment)
 
     @pytest.mark.unit
-    def test_enroll_duplicate_integrity_error(self, test_client: TestClient, sample_enrollment):
+    def test_enroll_duplicate_integrity_error(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test duplicate enrollment to hit IntegrityError path."""
         user_id = sample_enrollment.user_id
         course_id = sample_enrollment.course_id
         
-        response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
         
         assert response.status_code == 409
         data = response.json()
@@ -679,12 +718,13 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 131-132 (IntegrityError handling)
 
     @pytest.mark.unit
-    def test_unenroll_user_coverage(self, test_client: TestClient, sample_enrollment):
+    def test_unenroll_user_coverage(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test unenrollment to hit unenroll logic."""
         user_id = sample_enrollment.user_id
         course_id = sample_enrollment.course_id
         
-        response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
         
         assert response.status_code == 200
         data = response.json()
@@ -694,12 +734,13 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 147-156 (successful unenrollment)
 
     @pytest.mark.unit
-    def test_unenroll_nonexistent_enrollment(self, test_client: TestClient, sample_user, sample_course):
+    def test_unenroll_nonexistent_enrollment(self, test_client: TestClient, sample_user, sample_course, mock_transactional_db):
         """Test unenrolling when enrollment doesn't exist."""
         user_id = sample_user.id
         course_id = sample_course.id
         
-        response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
+        with mock_transactional_db:
+            response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
         
         assert response.status_code == 404
         data = response.json()
@@ -707,11 +748,12 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 149-150 (enrollment not found)
 
     @pytest.mark.unit
-    def test_get_user_courses_coverage(self, test_client: TestClient, sample_enrollment):
+    def test_get_user_courses_coverage(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test get user courses to hit user courses logic."""
         user_id = sample_enrollment.user_id
         
-        response = test_client.get(f"/user/{user_id}/courses")
+        with mock_transactional_db:
+            response = test_client.get(f"/user/{user_id}/courses")
         
         assert response.status_code == 200
         data = response.json()
@@ -721,9 +763,10 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 166-185 (get user courses logic)
 
     @pytest.mark.unit
-    def test_get_user_courses_user_not_found(self, test_client: TestClient):
+    def test_get_user_courses_user_not_found(self, test_client: TestClient, mock_transactional_db):
         """Test get user courses with non-existent user."""
-        response = test_client.get("/user/99999/courses")
+        with mock_transactional_db:
+            response = test_client.get("/user/99999/courses")
         
         assert response.status_code == 404
         data = response.json()
@@ -731,11 +774,12 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 168-169 (user not found in get courses)
 
     @pytest.mark.unit
-    def test_get_course_users_coverage(self, test_client: TestClient, sample_enrollment):
+    def test_get_course_users_coverage(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test get course users to hit course users logic."""
         course_id = sample_enrollment.course_id
         
-        response = test_client.get(f"/course/{course_id}/users")
+        with mock_transactional_db:
+            response = test_client.get(f"/course/{course_id}/users")
         
         assert response.status_code == 200
         data = response.json()
@@ -745,9 +789,10 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 193-214 (get course users logic)
 
     @pytest.mark.unit
-    def test_get_course_users_course_not_found(self, test_client: TestClient):
+    def test_get_course_users_course_not_found(self, test_client: TestClient, mock_transactional_db):
         """Test get course users with non-existent course."""
-        response = test_client.get("/course/99999/users")
+        with mock_transactional_db:
+            response = test_client.get("/course/99999/users")
         
         assert response.status_code == 404
         data = response.json()
@@ -755,36 +800,41 @@ class TestCourseRoutesCoverageEnhancement:
         # This hits lines 195-196 (course not found in get users)
 
     @pytest.mark.unit
-    def test_get_course_not_found(self, test_client):
-        response = test_client.get("/course/999")
+    def test_get_course_not_found(self, test_client, mock_transactional_db):
+        with mock_transactional_db:
+            response = test_client.get("/course/999")
         assert response.status_code == 404
 
     @pytest.mark.unit
-    def test_create_course_invalid_data(self, test_client):
-        response = test_client.post("/course", json={"title": ""})
+    def test_create_course_invalid_data(self, test_client, mock_transactional_db):
+        with mock_transactional_db:
+            response = test_client.post("/course", json={"title": ""})
         assert response.status_code == 422
 
     @pytest.mark.unit
-    def test_enroll_duplicate(self, test_client, sample_course, sample_user):
+    def test_enroll_duplicate(self, test_client, sample_course, sample_user, mock_transactional_db):
         # Verify user and course exist first
-        user_response = test_client.get(f"/user/{sample_user.id}")
-        assert user_response.status_code == 200
-        course_response = test_client.get(f"/course/{sample_course.id}")
-        assert course_response.status_code == 200
-        
-        # First enrollment (should succeed)
-        response = test_client.post(f"/user/{sample_user.id}/enroll/{sample_course.id}", json={})
-        assert response.status_code == 200
-        
-        # Second enrollment (should fail with 409)
-        response = test_client.post(f"/user/{sample_user.id}/enroll/{sample_course.id}", json={})
+        with mock_transactional_db:
+            user_response = test_client.get(f"/user/{sample_user.id}")
+            assert user_response.status_code == 200
+            
+            course_response = test_client.get(f"/course/{sample_course.id}")
+            assert course_response.status_code == 200
+            
+            # First enrollment (should succeed)
+            response = test_client.post(f"/user/{sample_user.id}/enroll/{sample_course.id}", json={})
+            assert response.status_code == 200
+            
+            # Second enrollment (should fail with 409)
+            response = test_client.post(f"/user/{sample_user.id}/enroll/{sample_course.id}", json={})
         assert response.status_code == 409
 
     @pytest.mark.unit
-    def test_enroll_transaction_rollback(self, test_client, sample_course, sample_user):
+    def test_enroll_transaction_rollback(self, test_client, sample_course, sample_user, mock_transactional_db):
         # This test verifies that error handling works by testing error responses
         # Test enrollment with non-existent user (simulates transaction failure scenario)
-        response = test_client.post(f"/user/99999/enroll/{sample_course.id}", json={})
+        with mock_transactional_db:
+            response = test_client.post(f"/user/99999/enroll/{sample_course.id}", json={})
         assert response.status_code == 404
         data = response.json()
         assert "detail" in data

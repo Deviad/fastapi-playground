@@ -319,26 +319,28 @@ class TestExceptionHandlersIntegration:
         assert "detail" in data
 
     @pytest.mark.unit
-    def test_exception_handlers_integration_http_exception(self, test_client: TestClient):
+    def test_exception_handlers_integration_http_exception(self, test_client: TestClient, mock_transactional_db):
         """Test HTTPException handling through FastAPI integration."""
-        # Try to get a non-existent user to trigger HTTPException
-        response = test_client.get("/user/99999")
-        
-        assert response.status_code == 404
-        data = response.json()
-        assert "detail" in data
-        assert "not found" in data["detail"].lower()
+        with mock_transactional_db:
+            # Try to get a non-existent user to trigger HTTPException
+            response = test_client.get("/user/99999")
+            
+            assert response.status_code == 404
+            data = response.json()
+            assert "detail" in data
+            assert "not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_exception_handlers_integration_integrity_error(self, test_client: TestClient, sample_enrollment):
+    def test_exception_handlers_integration_integrity_error(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
         """Test IntegrityError handling through FastAPI integration."""
-        # Try to create a duplicate enrollment to trigger IntegrityError
-        user_id = sample_enrollment.user_id
-        course_id = sample_enrollment.course_id
+        with mock_transactional_db:
+            # Try to create a duplicate enrollment to trigger IntegrityError
+            user_id = sample_enrollment.user_id
+            course_id = sample_enrollment.course_id
 
-        response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
-        
-        assert response.status_code == 409  # Should be handled as conflict
-        data = response.json()
-        assert "detail" in data
-        assert "already enrolled" in data["detail"].lower()
+            response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
+            
+            assert response.status_code == 409  # Should be handled as conflict
+            data = response.json()
+            assert "detail" in data
+            assert "already enrolled" in data["detail"].lower()
