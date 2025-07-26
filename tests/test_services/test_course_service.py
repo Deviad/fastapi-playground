@@ -9,6 +9,7 @@ as the original route implementations.
 import pytest
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 from fastapi_playground_poc.services.course_service import CourseService
 from fastapi_playground_poc.schemas import CourseCreate, CourseUpdate
 
@@ -226,6 +227,246 @@ class TestCourseService:
             result = await self.course_service.get_user_courses(non_existent_user_id)
         
         assert result is None
+
+    # Direct route function tests for additional coverage
+    @pytest.mark.asyncio
+    async def test_create_course_direct_route_function(self, test_db: AsyncSession, mock_transactional_db):
+        """Direct test of create_course route function."""
+        from fastapi_playground_poc.courses_routes import create_course
+        
+        with mock_transactional_db:
+            course_data = CourseCreate(
+                name="Direct Test Course",
+                author_name="Direct Author",
+                price="199.99"
+            )
+            
+            result = await create_course(course_data, self.course_service)
+            
+            assert result.name == course_data.name
+            assert result.author_name == course_data.author_name
+            assert result.price == course_data.price
+
+    @pytest.mark.asyncio
+    async def test_get_course_direct_route_success(self, test_db: AsyncSession, sample_course, mock_transactional_db):
+        """Direct test of get_course route function success."""
+        from fastapi_playground_poc.courses_routes import get_course
+        
+        with mock_transactional_db:
+            result = await get_course(sample_course.id, self.course_service)
+            
+            assert result.id == sample_course.id
+            assert result.name == sample_course.name
+            assert hasattr(result, 'users')
+
+    @pytest.mark.asyncio
+    async def test_get_course_direct_route_not_found(self, test_db: AsyncSession, mock_transactional_db):
+        """Direct test of get_course route function not found."""
+        from fastapi_playground_poc.courses_routes import get_course
+        
+        with mock_transactional_db:
+            with pytest.raises(HTTPException) as exc_info:
+                await get_course(99999, self.course_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "Course not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_get_all_courses_direct_route(self, test_db: AsyncSession, multiple_courses, mock_transactional_db):
+        """Direct test of get_all_courses route function."""
+        from fastapi_playground_poc.courses_routes import get_all_courses
+        
+        with mock_transactional_db:
+            result = await get_all_courses(self.course_service)
+            
+            assert isinstance(result, list)
+            assert len(result) == len(multiple_courses)
+
+    @pytest.mark.asyncio
+    async def test_update_course_direct_route_success(self, test_db: AsyncSession, sample_course, mock_transactional_db):
+        """Direct test of update_course route function success."""
+        from fastapi_playground_poc.courses_routes import update_course
+        
+        with mock_transactional_db:
+            update_data = CourseUpdate(
+                name="Updated Direct Course",
+                price="299.99"
+            )
+            
+            result = await update_course(sample_course.id, update_data, self.course_service)
+            
+            assert result.id == sample_course.id
+            assert result.name == update_data.name
+            assert result.price == update_data.price
+
+    @pytest.mark.asyncio
+    async def test_update_course_direct_route_not_found(self, test_db: AsyncSession, mock_transactional_db):
+        """Direct test of update_course route function not found."""
+        from fastapi_playground_poc.courses_routes import update_course
+        
+        with mock_transactional_db:
+            update_data = CourseUpdate(name="Updated")
+            
+            with pytest.raises(HTTPException) as exc_info:
+                await update_course(99999, update_data, self.course_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "Course not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_delete_course_direct_route_success(self, test_db: AsyncSession, sample_course, mock_transactional_db):
+        """Direct test of delete_course route function success."""
+        from fastapi_playground_poc.courses_routes import delete_course
+        
+        with mock_transactional_db:
+            course_id = sample_course.id
+            
+            result = await delete_course(course_id, self.course_service)
+            
+            assert "deleted successfully" in result["message"]
+            assert str(course_id) in result["message"]
+
+    @pytest.mark.asyncio
+    async def test_delete_course_direct_route_not_found(self, test_db: AsyncSession, mock_transactional_db):
+        """Direct test of delete_course route function not found."""
+        from fastapi_playground_poc.courses_routes import delete_course
+        
+        with mock_transactional_db:
+            with pytest.raises(HTTPException) as exc_info:
+                await delete_course(99999, self.course_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "Course not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_enroll_user_direct_route_success(self, test_db: AsyncSession, sample_user, sample_course, mock_transactional_db):
+        """Direct test of enroll_user_in_course route function success."""
+        from fastapi_playground_poc.courses_routes import enroll_user_in_course
+        
+        with mock_transactional_db:
+            result = await enroll_user_in_course(sample_user.id, sample_course.id, self.course_service)
+            
+            assert result.user_id == sample_user.id
+            assert result.course_id == sample_course.id
+            assert result.enrollment_date is not None
+
+    @pytest.mark.asyncio
+    async def test_enroll_user_direct_route_user_not_found(self, test_db: AsyncSession, sample_course, mock_transactional_db):
+        """Direct test of enroll_user_in_course route function user not found."""
+        from fastapi_playground_poc.courses_routes import enroll_user_in_course
+        
+        with mock_transactional_db:
+            with pytest.raises(HTTPException) as exc_info:
+                await enroll_user_in_course(99999, sample_course.id, self.course_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "User not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_enroll_course_direct_route_not_found(self, test_db: AsyncSession, sample_user, mock_transactional_db):
+        """Direct test of enroll_user_in_course route function course not found."""
+        from fastapi_playground_poc.courses_routes import enroll_user_in_course
+        
+        with mock_transactional_db:
+            with pytest.raises(HTTPException) as exc_info:
+                await enroll_user_in_course(sample_user.id, 99999, self.course_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "Course not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_unenroll_direct_route_success(self, test_db: AsyncSession, sample_enrollment, mock_transactional_db):
+        """Direct test of unenroll_user_from_course route function success."""
+        from fastapi_playground_poc.courses_routes import unenroll_user_from_course
+        
+        with mock_transactional_db:
+            user_id = sample_enrollment.user_id
+            course_id = sample_enrollment.course_id
+            
+            result = await unenroll_user_from_course(user_id, course_id, self.course_service)
+            
+            assert "unenrolled" in result["message"]
+            assert str(user_id) in result["message"]
+            assert str(course_id) in result["message"]
+
+    @pytest.mark.asyncio
+    async def test_unenroll_direct_route_not_found(self, test_db: AsyncSession, sample_user, sample_course, mock_transactional_db):
+        """Direct test of unenroll_user_from_course route function not found."""
+        from fastapi_playground_poc.courses_routes import unenroll_user_from_course
+        
+        with mock_transactional_db:
+            with pytest.raises(HTTPException) as exc_info:
+                await unenroll_user_from_course(sample_user.id, sample_course.id, self.course_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "Enrollment not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_get_user_courses_direct_route_success(self, test_db: AsyncSession, sample_enrollment, mock_transactional_db):
+        """Direct test of get_user_courses route function success."""
+        from fastapi_playground_poc.courses_routes import get_user_courses
+        
+        with mock_transactional_db:
+            user_id = sample_enrollment.user_id
+            
+            result = await get_user_courses(user_id, self.course_service)
+            
+            assert result["id"] == user_id
+            assert "courses" in result
+            assert len(result["courses"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_get_user_courses_direct_route_not_found(self, test_db: AsyncSession, mock_transactional_db):
+        """Direct test of get_user_courses route function not found."""
+        from fastapi_playground_poc.courses_routes import get_user_courses
+        
+        with mock_transactional_db:
+            with pytest.raises(HTTPException) as exc_info:
+                await get_user_courses(99999, self.course_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "User not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_get_course_users_direct_route_success(self, test_db: AsyncSession, sample_enrollment, mock_transactional_db):
+        """Direct test of get_course_users route function success."""
+        from fastapi_playground_poc.courses_routes import get_course_users
+        
+        with mock_transactional_db:
+            course_id = sample_enrollment.course_id
+            
+            result = await get_course_users(course_id, self.course_service)
+            
+            assert result["id"] == course_id
+            assert "users" in result
+            assert len(result["users"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_get_course_users_direct_route_not_found(self, test_db: AsyncSession, mock_transactional_db):
+        """Direct test of get_course_users route function not found."""
+        from fastapi_playground_poc.courses_routes import get_course_users
+        
+        with mock_transactional_db:
+            with pytest.raises(HTTPException) as exc_info:
+                await get_course_users(99999, self.course_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "Course not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_duplicate_enrollment_direct_route(self, test_db: AsyncSession, sample_enrollment, mock_transactional_db):
+        """Direct test of duplicate enrollment through route function."""
+        from fastapi_playground_poc.courses_routes import enroll_user_in_course
+        
+        with mock_transactional_db:
+            user_id = sample_enrollment.user_id
+            course_id = sample_enrollment.course_id
+            
+            with pytest.raises(HTTPException) as exc_info:
+                await enroll_user_in_course(user_id, course_id, self.course_service)
+            
+            assert exc_info.value.status_code == 409
+            assert "already enrolled" in str(exc_info.value.detail)
 
     @pytest.mark.unit
     async def test_get_course_users_success(self, sample_enrollment, mock_transactional_db):

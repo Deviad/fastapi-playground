@@ -8,6 +8,7 @@ as the original route implementations.
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 from fastapi_playground_poc.services.user_service import UserService
 from fastapi_playground_poc.schemas import UserCreate
 
@@ -102,3 +103,61 @@ class TestUserService:
         assert result.user_info is not None
         assert result.user_info.address == user_data.address
         assert result.user_info.bio is None
+
+    # Direct route function tests for additional coverage
+    @pytest.mark.asyncio
+    async def test_create_user_direct_route_function(self, test_db: AsyncSession, mock_transactional_db):
+        """Direct test of create_user route function."""
+        from fastapi_playground_poc.user_routes import create_user
+        
+        with mock_transactional_db:
+            user_data = UserCreate(
+                name="Direct Test User",
+                address="123 Direct Street",
+                bio="Direct test execution"
+            )
+            
+            result = await create_user(user_data, self.user_service)
+            
+            assert result.name == user_data.name
+            assert result.user_info.address == user_data.address
+            assert result.user_info.bio == user_data.bio
+
+    @pytest.mark.asyncio
+    async def test_get_user_direct_route_success(self, test_db: AsyncSession, sample_user, mock_transactional_db):
+        """Direct test of get_user route function success path."""
+        from fastapi_playground_poc.user_routes import get_user
+        
+        with mock_transactional_db:
+            result = await get_user(sample_user.id, self.user_service)
+            
+            assert result.id == sample_user.id
+            assert result.name == sample_user.name
+            assert result.user_info is not None
+
+    @pytest.mark.asyncio
+    async def test_get_user_direct_route_not_found(self, test_db: AsyncSession, mock_transactional_db):
+        """Direct test of get_user route function not found error."""
+        from fastapi_playground_poc.user_routes import get_user
+        
+        with mock_transactional_db:
+            with pytest.raises(HTTPException) as exc_info:
+                await get_user(99999, self.user_service)
+            
+            assert exc_info.value.status_code == 404
+            assert "User not found" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_get_all_users_direct_route(self, test_db: AsyncSession, multiple_users, mock_transactional_db):
+        """Direct test of get_all_users route function."""
+        from fastapi_playground_poc.user_routes import get_all_users
+        
+        with mock_transactional_db:
+            result = await get_all_users(self.user_service)
+            
+            assert isinstance(result, list)
+            assert len(result) == len(multiple_users)
+            
+            # Verify all users have user_info loaded
+            for user in result:
+                assert user.user_info is not None
