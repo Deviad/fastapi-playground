@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     
     environment: str = Field(default="local", env="ENVIRONMENT")
     
+    # Database configuration
+    database_url: str = Field(
+        default="postgresql+asyncpg://dev-user:password@localhost:5432/dev_db",
+        env="DATABASE_URL"
+    )
+    
     # Define which environments should have swagger enabled
     allowed_swagger_environments: List[str] = ["local", "dev"]
     

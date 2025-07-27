@@ -12,18 +12,21 @@ from fastapi_playground_poc.models.User import User  # Import your models
 # Add diagnostic logging
 logger = logging.getLogger("alembic.env")
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
-config = context.config
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-
 # add your model's MetaData object here
 # for 'autogenerate' support
 target_metadata = Base.metadata
+
+
+def get_config():
+    """Get the alembic configuration when context is available."""
+    return context.config
+
+
+def setup_logging():
+    """Setup logging configuration when context is available."""
+    config = get_config()
+    if config.config_file_name is not None:
+        fileConfig(config.config_file_name)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -43,6 +46,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
+    config = get_config()  # Get config when function is called
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -108,6 +112,7 @@ async def run_async_migrations():
     logger.info("Starting async migrations")
 
     # Get database URL and handle schema configuration for asyncpg
+    config = get_config()  # Get config when function is called
     db_url = config.get_main_option("sqlalchemy.url")
     logger.info(f"Original Database URL: {db_url}")
 
@@ -168,4 +173,6 @@ def run_migrations_online() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
+    # Setup logging configuration when we have a valid context
+    setup_logging()
     run_migrations_online()
