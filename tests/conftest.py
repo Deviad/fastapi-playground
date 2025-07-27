@@ -10,8 +10,9 @@ import os
 import pytest
 import asyncio
 import contextlib
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
+import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from fastapi_playground_poc.config import settings
@@ -66,6 +67,15 @@ async def setup_test_database():
     yield
     await drop_test_tables()
 
+
+@pytest.fixture
+async def mock_session():
+    """Create a mock AsyncSession for testing"""
+    session = AsyncMock(spec=AsyncSession)
+    session.bind = MagicMock()
+    session.bind.url = MagicMock()
+    session.bind.url.__str__ = MagicMock(return_value="sqlite+aiosqlite:///:memory:")
+    return session
 
 @pytest.fixture
 async def test_db(setup_test_database):

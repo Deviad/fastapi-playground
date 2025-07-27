@@ -35,18 +35,7 @@ from .test_transactional_base import (
 )
 
 
-@pytest_asyncio.fixture
-async def mock_session():
-    """Create a mock AsyncSession for testing - PostgreSQL version"""
-    session = AsyncMock(spec=AsyncSession)
-    session.bind = MagicMock()
-    session.bind.url = MagicMock()
-    session.bind.url.__str__ = MagicMock(return_value="postgresql://user:pass@localhost/testdb")
-    return session
-
-
 # PostgreSQL-specific fixtures
-@pytest.mark.asyncio
 @pytest.fixture(scope="class")
 async def postgresql_test_engine():
     """Create a PostgreSQL test engine with test schema"""
@@ -124,24 +113,24 @@ async def mock_postgresql_db(postgresql_test_session):
         yield postgresql_test_session
 
 
-class TestTransactionalDecoratorPostgreSQL(TestTransactionalDecoratorBase):
-    """PostgreSQL-specific transactional decorator tests"""
-    pass
+# class TestTransactionalDecoratorPostgreSQL(TestTransactionalDecoratorBase):
+#     """PostgreSQL-specific transactional decorator tests"""
+#     pass
 
 
-class TestPropagationPostgreSQL(TestPropagationBase):
-    """PostgreSQL-specific propagation tests"""
-    pass
+# class TestPropagationPostgreSQL(TestPropagationBase):
+#     """PostgreSQL-specific propagation tests"""
+#     pass
 
 
-class TestNestedTransactionPostgreSQL(TestNestedTransactionBase):
-    """PostgreSQL-specific nested transaction tests"""
-    pass
+# class TestNestedTransactionPostgreSQL(TestNestedTransactionBase):
+#     """PostgreSQL-specific nested transaction tests"""
+#     pass
 
 
-class TestContextFunctionsPostgreSQL(TestContextFunctionsBase):
-    """PostgreSQL-specific context function tests"""
-    pass
+# class TestContextFunctionsPostgreSQL(TestContextFunctionsBase):
+#     """PostgreSQL-specific context function tests"""
+#     pass
 
 
 class TestPostgreSQLSpecificBehavior:

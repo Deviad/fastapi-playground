@@ -89,16 +89,6 @@ def assert_sql_command_executed(mock_session, expected_sql):
     assert expected_sql in executed_commands, f"Expected '{expected_sql}' not found in executed commands: {executed_commands}"
 
 
-@pytest_asyncio.fixture
-async def mock_session():
-    """Create a mock AsyncSession for testing"""
-    session = AsyncMock(spec=AsyncSession)
-    session.bind = MagicMock()
-    session.bind.url = MagicMock()
-    session.bind.url.__str__ = MagicMock(return_value="sqlite:///test.db")
-    return session
-
-
 # Test data fixtures
 @pytest.fixture
 def sample_user_data():
@@ -117,6 +107,8 @@ def sample_course_data():
 class TestTransactionalDecoratorBase:
     """Base test class with common test patterns"""
     
+
+
     @pytest.mark.asyncio
     async def test_basic_session_injection(self, mock_session):
         """Test basic session injection into decorated method"""
