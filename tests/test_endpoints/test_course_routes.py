@@ -1,3 +1,4 @@
+from unittest.mock import patch
 """
 Tests for course-related API endpoints.
 
@@ -1338,3 +1339,83 @@ class TestCourseRoutesCoverageEnhancement:
         assert result.status_code == 404
         data = result.json()
         assert "detail" in data
+
+    @pytest.mark.unit
+    def test_delete_course_not_found_error_handling(self, test_client: TestClient, mock_transactional_db):
+        """Test error handling in delete_course when course is not found."""
+        with mock_transactional_db:
+            response = test_client.delete("/course/99999")
+            assert response.status_code == 404
+            data = response.json()
+            assert "detail" in data
+            assert "Course not found" in data["detail"]
+
+    @pytest.mark.unit
+    def test_enroll_user_in_course_none_enrollment(self, test_client: TestClient, sample_course, mock_transactional_db):
+        """Test error handling when enrollment is None."""
+        # Mock the service to return None
+        with patch('fastapi_playground_poc.services.course_service.CourseService.enroll_user_in_course') as mock_service:
+            mock_service.return_value = None
+
+            with mock_transactional_db:
+                response = test_client.post(f"/user/1/enroll/{sample_course.id}")
+                assert response.status_code == 404
+                data = response.json()
+                assert "detail" in data
+                assert "User or course not found" in data["detail"]
+
+    @pytest.mark.unit
+    def test_enroll_user_in_course_user_not_found_error(self, test_client: TestClient, sample_course, mock_transactional_db):
+        """Test error handling for user not found ValueError."""
+        # Mock the service to raise ValueError with "user not found" message
+        with patch('fastapi_playground_poc.services.course_service.CourseService.enroll_user_in_course') as mock_service:
+            mock_service.side_effect = ValueError("User not found")
+
+            with mock_transactional_db:
+                response = test_client.post(f"/user/1/enroll/{sample_course.id}")
+                assert response.status_code == 404
+                data = response.json()
+                assert "detail" in data
+                assert "User not found" in data["detail"]
+
+    @pytest.mark.unit
+    def test_enroll_user_in_course_course_not_found_error(self, test_client: TestClient, sample_user, mock_transactional_db):
+        """Test error handling for course not found ValueError."""
+        # Mock the service to raise ValueError with "course not found" message
+        with patch('fastapi_playground_poc.services.course_service.CourseService.enroll_user_in_course') as mock_service:
+            mock_service.side_effect = ValueError("Course not found")
+
+            with mock_transactional_db:
+                response = test_client.post(f"/user/{sample_user.id}/enroll/99999")
+                assert response.status_code == 404
+                data = response.json()
+                assert "detail" in data
+                assert "Course not found" in data["detail"]
+
+    @pytest.mark.unit
+    def test_enroll_user_in_course_already_enrolled_error(self, test_client: TestClient, sample_user, sample_course, mock_transactional_db):
+        """Test error handling for already enrolled ValueError."""
+        # Mock the service to raise ValueError with "already enrolled" message
+        with patch('fastapi_playground_poc.services.course_service.CourseService.enroll_user_in_course') as mock_service:
+            mock_service.side_effect = ValueError("User is already enrolled in the course")
+
+            with mock_transactional_db:
+                response = test_client.post(f"/user/{sample_user.id}/enroll/{sample_course.id}")
+                assert response.status_code == 409
+                data = response.json()
+                assert "detail" in data
+                assert "User is already enrolled in the course" in data["detail"]
+
+    @pytest.mark.unit
+    def test_enroll_user_in_course_other_value_error(self, test_client: TestClient, sample_user, sample_course, mock_transactional_db):
+        """Test error handling for other ValueError cases."""
+        # Mock the service to raise ValueError with a different message
+        with patch('fastapi_playground_poc.services.course_service.CourseService.enroll_user_in_course') as mock_service:
+            mock_service.side_effect = ValueError("Some other error")
+
+            with mock_transactional_db:
+                response = test_client.post(f"/user/{sample_user.id}/enroll/{sample_course.id}")
+                assert response.status_code == 400
+                data = response.json()
+                assert "detail" in data
+                assert "Some other error" in data["detail"]
