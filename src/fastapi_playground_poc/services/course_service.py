@@ -16,7 +16,7 @@ from fastapi_playground_poc.transactional import Transactional
 from fastapi_playground_poc.models.Course import Course
 from fastapi_playground_poc.models.User import User
 from fastapi_playground_poc.models.Enrollment import Enrollment
-from fastapi_playground_poc.schemas import CourseCreate, CourseUpdate
+from fastapi_playground_poc.schemas import CourseCreate, CourseResponseWithUsers, CourseUpdate, UserInfoResponse, UserResponseWithCourses
 
 
 class CourseService:
@@ -152,7 +152,7 @@ class CourseService:
         return True
 
     @Transactional()
-    async def get_user_courses(self, db: AsyncSession, user_id: int) -> Optional[Dict[str, Any]]:
+    async def get_user_courses(self, db: AsyncSession, user_id: int) -> Optional[UserResponseWithCourses]:
         """Get a user with all their enrolled courses."""
         # Get user first (without loading enrollments to avoid cache)
         user_result = await db.execute(
@@ -170,31 +170,40 @@ class CourseService:
             .where(Enrollment.user_id == user_id)
         )
         courses = courses_result.scalars().all()
-
         # Convert courses to dictionaries to avoid DetachedInstanceError
-        courses_data = []
-        for course in courses:
-            courses_data.append({
-                "id": course.id,
-                "name": course.name,
-                "author_name": course.author_name,
-                "price": course.price,
-            })
+        # courses_data = []
+        # for course in courses:
+        #     courses_data.append({
+        #         "id": course.id,
+        #         "name": course.name,
+        #         "author_name": course.author_name,
+        #         "price": course.price,
+        #     })
 
         # Create response dict manually to include the courses
-        return {
-            "id": user.id,
-            "name": user.name,
-            "user_info": {
-                "id": user.user_info.id,
-                "address": user.user_info.address,
-                "bio": user.user_info.bio,
-            } if user.user_info else None,
-            "courses": courses_data,
-        }
+        return UserResponseWithCourses(
+            id=user.id,
+            name=user.name,
+            user_info=UserInfoResponse(
+                id=user.user_info.id,
+                address=user.user_info.address,
+                bio=user.user_info.bio
+            ) if user.user_info else None,
+            courses=courses
+        )
+        # return {
+        #     "id": user.id,
+        #     "name": user.name,
+        #     "user_info": {
+        #         "id": user.user_info.id,
+        #         "address": user.user_info.address,
+        #         "bio": user.user_info.bio,
+        #     } if user.user_info else None,
+        #     "courses": courses_data,
+        # }
 
     @Transactional()
-    async def get_course_users(self, db: AsyncSession, course_id: int) -> Optional[Dict[str, Any]]:
+    async def get_course_users(self, db: AsyncSession, course_id: int) -> CourseResponseWithUsers:
         """Get a course with all enrolled users."""
         # Get course first (without loading enrollments to avoid cache)
         course_result = await db.execute(select(Course).where(Course.id == course_id))
@@ -225,11 +234,19 @@ class CourseService:
                 } if user.user_info else None,
             })
 
+        return CourseResponseWithUsers(
+            id=course.id,
+            name=course.name,
+            author_name=course.author_name,
+            price=course.price,
+            users=users
+        )
+
         # Create response dict manually to include the users
-        return {
-            "id": course.id,
-            "name": course.name,
-            "author_name": course.author_name,
-            "price": course.price,
-            "users": users_data,
-        }
+        # return {
+        #     "id": course.id,
+        #     "name": course.name,
+        #     "author_name": course.author_name,
+        #     "price": course.price,
+        #     "users": users_data,
+        # }

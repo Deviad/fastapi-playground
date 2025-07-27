@@ -211,12 +211,13 @@ class TestCourseService:
             result = await self.course_service.get_user_courses(user_id)
         
         assert result is not None
-        assert result["id"] == user_id
-        assert "name" in result
-        assert "user_info" in result
-        assert "courses" in result
-        assert isinstance(result["courses"], list)
-        assert len(result["courses"]) >= 1
+        assert result.id == user_id
+        assert hasattr(result, 'name')
+        assert len(result.name) > 0
+        assert hasattr(result, 'user_info')
+        assert hasattr(result, 'courses')
+        assert isinstance(result.courses, list)
+        assert len(result.courses) >= 1
 
     @pytest.mark.unit
     async def test_get_user_courses_user_not_found(self, mock_transactional_db):
@@ -403,9 +404,9 @@ class TestCourseService:
             
             result = await get_user_courses(user_id, self.course_service)
             
-            assert result["id"] == user_id
-            assert "courses" in result
-            assert len(result["courses"]) > 0
+            assert result.id == user_id
+            assert hasattr(result, "courses")
+            assert len(result.courses) > 0
 
     @pytest.mark.asyncio
     async def test_get_user_courses_direct_route_not_found(self, test_db: AsyncSession, mock_transactional_db):
@@ -429,9 +430,9 @@ class TestCourseService:
             
             result = await get_course_users(course_id, self.course_service)
             
-            assert result["id"] == course_id
-            assert "users" in result
-            assert len(result["users"]) > 0
+            assert result.id == course_id
+            assert hasattr(result, "users") 
+            assert len(result.users) > 0
 
     @pytest.mark.asyncio
     async def test_get_course_users_direct_route_not_found(self, test_db: AsyncSession, mock_transactional_db):
@@ -469,13 +470,13 @@ class TestCourseService:
             result = await self.course_service.get_course_users(course_id)
         
         assert result is not None
-        assert result["id"] == course_id
-        assert "name" in result
-        assert "author_name" in result
-        assert "price" in result
-        assert "users" in result
-        assert isinstance(result["users"], list)
-        assert len(result["users"]) >= 1
+        assert result.id == course_id
+        assert hasattr(result, "name")
+        assert hasattr(result, "author_name")
+        assert hasattr(result, "users")
+        assert hasattr(result, "price")
+        assert isinstance(result.users, list)
+        assert len(result.users) >= 1
 
     @pytest.mark.unit
     async def test_get_course_users_course_not_found(self, mock_transactional_db):
