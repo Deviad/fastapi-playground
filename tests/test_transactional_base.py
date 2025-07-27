@@ -107,8 +107,6 @@ def sample_course_data():
 class TestTransactionalDecoratorBase:
     """Base test class with common test patterns"""
     
-
-
     @pytest.mark.asyncio
     async def test_basic_session_injection(self, mock_session):
         """Test basic session injection into decorated method"""
