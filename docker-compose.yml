@@ -1,8 +1,8 @@
 version: "3.7"
 services:
   postgres:
-    image: postgres:15-alpine
-    restart: always
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: dev-user
       POSTGRES_PASSWORD: password
@@ -13,7 +13,11 @@ services:
       - "5432"
     volumes:
       - db-data:/var/lib/postgresql/data:cached
-
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - 8089:8080
 volumes:
   db-data:
   test-db-data:
