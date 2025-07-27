@@ -6,6 +6,7 @@ an in-memory SQLite database and FastAPI TestClient.
 Uses original models with consistent autoincrement behavior.
 """
 
+import os
 import pytest
 import asyncio
 import contextlib
@@ -13,7 +14,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-
+from fastapi_playground_poc.config import settings
 from fastapi_playground_poc.app import app
 from fastapi_playground_poc.db import get_db
 from tests.test_config import (
@@ -29,6 +30,22 @@ from fastapi_playground_poc.models.User import User
 from fastapi_playground_poc.models.UserInfo import UserInfo
 from fastapi_playground_poc.models.Course import Course
 from fastapi_playground_poc.models.Enrollment import Enrollment
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_test_environment():
+
+    settings.environment = "test" 
+    # """Set ENVIRONMENT to 'test' for all tests and restore original value after."""
+    # original_env = os.environ.get("ENVIRONMENT")
+    # os.environ["ENVIRONMENT"] = "test"
+    # print("environ is: " + str(os.environ["ENVIRONMENT"]))
+    # yield
+    # # Cleanup after all tests
+    # if original_env is None:
+    #     os.environ.pop("ENVIRONMENT", None)
+    # else:
+    #     os.environ["ENVIRONMENT"] = original_env
 
 
 @pytest.fixture(scope="session")

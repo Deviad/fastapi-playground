@@ -7,13 +7,13 @@ automatic environment variable parsing and validation.
 
 from typing import List
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings using Pydantic BaseSettings."""
     
-    environment: str = Field(default="local", env="ENVIRONMENT")
+    environment: str = Field(default="local", alias="ENVIRONMENT")
     
     # Database configuration
     database_url: str = Field(
@@ -33,12 +33,9 @@ class Settings(BaseSettings):
     def should_include_docs(self) -> bool:
         """Check if documentation endpoints should be included."""
         return self.__is_swagger_enabled()
-    
-    class Config:
-        """Pydantic configuration."""
-        env_file = ".env"
-        case_sensitive = False
 
+    """Pydantic configuration."""
+    model_config = SettingsConfigDict(case_sensitive = False)
 
 # Create a singleton instance
 settings = Settings()

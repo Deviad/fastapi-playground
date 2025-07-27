@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi_playground_poc.user_routes import router as user_router
@@ -13,8 +14,10 @@ async def lifespan(app: FastAPI):
     """Lifespan event handler for managing startup and shutdown events."""
     # Startup: Run migrations before accepting requests
     logger.info("Application is starting")
-    await startup_event()
-    logger.info("Migrations executed")
+    print(f"App environment is: {settings.environment}")
+    if settings.environment != "test":
+        await startup_event()
+        logger.info("Migrations executed")
     yield
     logger.info("Application is stopping")
     # Shutdown: Add cleanup tasks here if needed in the future
