@@ -24,7 +24,7 @@ class CourseService:
 
     # Course CRUD Operations
 
-    @Transactional()
+    @Transactional(auto_expunge=True)
     async def create_course(self, db: AsyncSession, course_data: CourseCreate) -> Course:
         """Create a new course."""
         new_course = Course(
@@ -38,6 +38,7 @@ class CourseService:
 
         # Reload the course to get the ID
         await db.refresh(new_course)
+        # db.expunge(new_course) Not needed with auto_expunge
         return new_course
 
     @Transactional()
@@ -50,24 +51,26 @@ class CourseService:
         
         if course is None:
             return None
-            
-        # Expunge from session to avoid DetachedInstanceError while keeping data
-        db.expunge(course)
-        for user in course.users:
-            db.expunge(user)
-            if user.user_info:
-                db.expunge(user.user_info)
+
+        # Not needed with auto_expunge
+        # # Expunge from session to avoid DetachedInstanceError while keeping data
+        # db.expunge(course)
+        # for user in course.users:
+        #     db.expunge(user)
+        #     if user.user_info:
+        #         db.expunge(user.user_info)
                 
         return course
 
-    @Transactional()
+    @Transactional(auto_expunge=True)
     async def get_all_courses(self, db: AsyncSession) -> List[Course]:
         """Get all courses."""
         result = await db.execute(select(Course))
         courses = result.scalars().all()
+        # db.expunge(courses) Not needed with auto_expunge
         return list(courses)
 
-    @Transactional()
+    @Transactional(auto_expunge=True)
     async def update_course(self, db: AsyncSession, course_id: int, course_data: CourseUpdate) -> Optional[Course]:
         """Update a course."""
         # Get the existing course
@@ -84,9 +87,10 @@ class CourseService:
 
         await db.commit()
         await db.refresh(course)
+        # db.expunge(courses) Not needed with auto_expunge
         return course
 
-    @Transactional()
+    @Transactional(auto_expunge=True)
     async def delete_course(self, db: AsyncSession, course_id: int) -> bool:
         """Delete a course (and all its enrollments due to cascade)."""
         # Get the existing course
@@ -102,7 +106,7 @@ class CourseService:
 
     # Enrollment Management
 
-    @Transactional()
+    @Transactional(auto_expunge=True)
     async def enroll_user_in_course(self, db: AsyncSession, user_id: int, course_id: int) -> Optional[Enrollment]:
         """Enroll a user in a course."""
         # Check if user exists
@@ -128,11 +132,12 @@ class CourseService:
             db.add(new_enrollment)
             await db.commit()
             await db.refresh(new_enrollment)
+            # db.expunge(new_enrollment) // not needed if using auto_expunge
             return new_enrollment
         except IntegrityError:
             raise ValueError("User is already enrolled in the course")
 
-    @Transactional()
+    @Transactional(auto_expunge=True)
     async def unenroll_user_from_course(self, db: AsyncSession, user_id: int, course_id: int) -> bool:
         """Unenroll a user from a course."""
         # Find the enrollment
@@ -151,7 +156,7 @@ class CourseService:
         await db.commit()
         return True
 
-    @Transactional()
+    @Transactional(auto_expunge=True)
     async def get_user_courses(self, db: AsyncSession, user_id: int) -> Optional[UserResponseWithCourses]:
         """Get a user with all their enrolled courses."""
         # Get user first (without loading enrollments to avoid cache)
@@ -202,7 +207,7 @@ class CourseService:
         #     "courses": courses_data,
         # }
 
-    @Transactional()
+    @Transactional(auto_expunge=True)
     async def get_course_users(self, db: AsyncSession, course_id: int) -> CourseResponseWithUsers:
         """Get a course with all enrolled users."""
         # Get course first (without loading enrollments to avoid cache)
