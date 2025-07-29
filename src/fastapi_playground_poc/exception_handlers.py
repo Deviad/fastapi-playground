@@ -13,6 +13,10 @@ from sqlalchemy.exc import IntegrityError
 from pydantic import ValidationError
 import logging
 
+from starlette.responses import JSONResponse
+
+from fastapi_playground_poc.services.exceptions import DomainException
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,7 +75,19 @@ async def general_exception_handler(request: Request, exc: Exception):
             "detail": "An unexpected error occurred"
         }
     )
-
+# This variant is to avoid 20, 30, 40 handlers.
+def domain_exception_handler(request: Request, exc: DomainException) -> JSONResponse:
+    """Convert domain exception to API response format"""
+    logger.error(f"Unhandled exception on {request.url}: {type(exc).__name__}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=exc.http_status,
+        content={
+            "error_code": exc.error_code,
+            "error_type": exc.error_type.value,
+            "message": exc.message,
+            "context": exc.context,
+        }
+    )
 
 def register_exception_handlers(app: FastAPI):
     """
@@ -81,6 +97,7 @@ def register_exception_handlers(app: FastAPI):
     app.add_exception_handler(ValidationError, validation_exception_handler)
     app.add_exception_handler(IntegrityError, integrity_error_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)
+    app.add_exception_handler(DomainException, domain_exception_handler)
     app.add_exception_handler(Exception, general_exception_handler)
     
     logger.info("Global exception handlers registered successfully")

@@ -84,9 +84,7 @@ async def unenroll_user_from_course(
     user_id: int, course_id: int, course_service: CourseService = Depends()
 ):
     """Unenroll a user from a course"""
-    success = await course_service.unenroll_user_from_course(user_id, course_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Enrollment not found")
+    await course_service.unenroll_user_from_course(user_id, course_id)
     return {"message": f"User {user_id} unenrolled from course {course_id}"}
 
 

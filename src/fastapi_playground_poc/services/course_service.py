@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
+from fastapi_playground_poc.services.exceptions import DomainException, DomainError
 from fastapi_playground_poc.transactional import Transactional
 from fastapi_playground_poc.models.Course import Course
 from fastapi_playground_poc.models.User import User
@@ -112,14 +113,14 @@ class CourseService:
         # Check if user exists
         user_result = await db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
-        if user is None:
-            raise ValueError("User not found")
+        if not user:
+            raise DomainException(DomainError.USER_NOT_FOUND, f"User with id {user.id} does not exist")
 
         # Check if course exists
         course_result = await db.execute(select(Course).where(Course.id == course_id))
         course = course_result.scalar_one_or_none()
         if course is None:
-            raise ValueError("Course not found")
+            raise DomainException(DomainError.COURSE_NOT_FOUND, f"Course with id {course.id} does not exist")
 
         # Create enrollment
         new_enrollment = Enrollment(
@@ -135,7 +136,14 @@ class CourseService:
             # db.expunge(new_enrollment) // not needed if using auto_expunge
             return new_enrollment
         except IntegrityError:
-            raise ValueError("User is already enrolled in the course")
+            raise DomainException(
+                DomainError.COURSE_NOT_FOUND,
+                "User is already enrolled in the course",
+                context={
+                    "course_id": course.id,
+                    "user_id": user_id,
+                }
+            )
 
     @Transactional(auto_expunge=True)
     async def unenroll_user_from_course(self, db: AsyncSession, user_id: int, course_id: int) -> bool:
@@ -149,12 +157,18 @@ class CourseService:
         enrollment = result.scalar_one_or_none()
 
         if enrollment is None:
-            return False
+            raise DomainException(
+                DomainError.ENROLLMENT_NOTFOUND,
+                "User is already enrolled in the course",
+                context={
+                    "course_id": course_id,
+                    "user_id": user_id,
+                }
+            )
 
         # Delete the enrollment
         await db.delete(enrollment)
         await db.commit()
-        return True
 
     @Transactional(auto_expunge=True)
     async def get_user_courses(self, db: AsyncSession, user_id: int) -> Optional[UserResponseWithCourses]:
