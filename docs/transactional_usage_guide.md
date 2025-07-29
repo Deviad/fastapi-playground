@@ -30,8 +30,9 @@ The `@Transactional` decorator provides automatic transaction management for you
 ### Simple Transaction
 
 ```python
-from fastapi_playground_poc.transactional import Transactional
+from fastapi_playground_poc.infrastructure.transactional import Transactional
 from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class UserService:
     @Transactional()
@@ -59,7 +60,8 @@ async def create_user(user_data: UserCreate):
 ### Convenience Decorators
 
 ```python
-from fastapi_playground_poc.transactional import transactional, read_only_transaction
+from fastapi_playground_poc.infrastructure.transactional import transactional, read_only_transaction
+
 
 # Simple transaction with defaults
 @transactional
@@ -67,6 +69,7 @@ async def create_simple_user(db: AsyncSession, name: str) -> User:
     user = User(name=name)
     db.add(user)
     return user
+
 
 # Read-only transaction
 @read_only_transaction
@@ -316,13 +319,14 @@ src/
 
 ```python
 # services/user_service.py
-from fastapi_playground_poc.transactional import Transactional, Propagation
+from fastapi_playground_poc.infrastructure.transactional import Transactional, Propagation
+
 
 class UserService:
     def __init__(self):
         self.notification_service = NotificationService()
         self.audit_service = AuditService()
-    
+
     @Transactional()
     async def create_user_with_welcome(self, db: AsyncSession, user_data: UserCreate) -> User:
         """Create user and send welcome notification"""
@@ -330,40 +334,41 @@ class UserService:
         user = User(name=user_data.name, email=user_data.email)
         user_info = UserInfo(address=user_data.address, bio=user_data.bio)
         user.user_info = user_info
-        
+
         db.add(user)
         await db.flush()  # Get user ID
-        
+
         # Audit in separate transaction (succeeds even if notification fails)
         await self.audit_service.log_user_creation(user.id)
-        
+
         # Send notification (failure won't rollback user creation)
         try:
             await self.notification_service.send_welcome_email(user.email)
         except NotificationError as e:
             logger.warning(f"Welcome email failed: {e}")
-        
+
         return user
-    
+
     @Transactional(read_only=True)
     async def get_user_statistics(self, db: AsyncSession, user_id: int) -> dict:
         """Get comprehensive user statistics"""
         user = await db.get(User, user_id)
         if not user:
             raise ValueError("User not found")
-        
+
         # Complex read-only queries
         enrollments = await db.execute(
             select(Enrollment)
             .options(selectinload(Enrollment.course))
             .where(Enrollment.user_id == user_id)
         )
-        
+
         return {
             "user": user,
             "enrollment_count": len(enrollments.scalars().all()),
             "total_course_value": sum(e.course.price for e in enrollments.scalars())
         }
+
 
 # services/audit_service.py
 class AuditService:
@@ -587,30 +592,34 @@ async def test_rollback():
 ## Advanced Features
 
 ### Manual Transaction Control
+
 ```python
-from fastapi_playground_poc.transactional import mark_rollback_only
+from fastapi_playground_poc.infrastructure.transactional import mark_rollback_only
+
 
 @Transactional()
 async def conditional_operation(db: AsyncSession, data: dict):
     user = User(**data)
     db.add(user)
-    
+
     if not await validate_user_data(user):
         mark_rollback_only()  # Force rollback
         return {"status": "validation_failed"}
-    
+
     return {"status": "success", "user": user}
 ```
 
 ### Context Manager Support
+
 ```python
 # For manual transaction control when decorator isn't suitable
-from fastapi_playground_poc.db import get_db
+from fastapi_playground_poc.infrastructure.db import get_db
+
 
 async def manual_transaction_example():
     db_gen = get_db()
     db = await anext(db_gen)
-    
+
     try:
         # Manual transaction logic
         user = User(name="Manual User")

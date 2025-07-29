@@ -1,11 +1,10 @@
-import os
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from fastapi_playground_poc.user_routes import router as user_router
-from fastapi_playground_poc.courses_routes import router as courses_router
-from fastapi_playground_poc.exception_handlers import register_exception_handlers
+from fastapi_playground_poc.application.web.controller.user_routes import router as user_router
+from fastapi_playground_poc.application.web.controller.courses_routes import router as courses_router
+from fastapi_playground_poc.infrastructure.exception_handlers import register_exception_handlers
 from fastapi_playground_poc.config import settings
-from fastapi_playground_poc.startup import startup_event
+from fastapi_playground_poc.infrastructure.startup import startup_event
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

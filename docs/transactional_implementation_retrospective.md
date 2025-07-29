@@ -204,7 +204,7 @@ async def test_isolation_levels_sql_commands():
         pass
     
     # Mock the session and its execute method
-    with patch('fastapi_playground_poc.transactional.get_db') as mock_get_db:
+    with patch('fastapi_playground_poc.infrastructure.transactional.get_db') as mock_get_db:
         mock_session = AsyncMock()
         mock_get_db.return_value = async_generator_from_session(mock_session)
         

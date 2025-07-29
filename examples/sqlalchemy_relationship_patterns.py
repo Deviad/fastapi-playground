@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from fastapi_playground_poc.models.User import User
-from fastapi_playground_poc.models.UserInfo import UserInfo
+from fastapi_playground_poc.domain.model.User import User
+from fastapi_playground_poc.domain.model.UserInfo import UserInfo
 
 
 # Pattern 1: Direct Assignment (RECOMMENDED)
