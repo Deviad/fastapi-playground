@@ -227,17 +227,17 @@ class CourseService:
         users = users_result.scalars().all()
 
         # Convert users to dictionaries to avoid DetachedInstanceError
-        users_data = []
-        for user in users:
-            users_data.append({
-                "id": user.id,
-                "name": user.name,
-                "user_info": {
-                    "id": user.user_info.id,
-                    "address": user.user_info.address,
-                    "bio": user.user_info.bio,
-                } if user.user_info else None,
-            })
+        # users_data = []
+        # for user in users:
+        #     users_data.append({
+        #         "id": user.id,
+        #         "name": user.name,
+        #         "user_info": {
+        #             "id": user.user_info.id,
+        #             "address": user.user_info.address,
+        #             "bio": user.user_info.bio,
+        #         } if user.user_info else None,
+        #     })
 
         return CourseResponseWithUsers(
             id=course.id,
