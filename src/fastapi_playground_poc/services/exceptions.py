@@ -1,5 +1,4 @@
-from enum import Enum, auto
-
+from enum import Enum, unique
 from typing import Dict, Any
 
 
@@ -10,43 +9,39 @@ class DomainErrorType(Enum):
     BUSINESS_RULE_VIOLATION = "BUSINESS_RULE_VIOLATION"
     INFRASTRUCTURE = "INFRASTRUCTURE"
 
+@unique
 class DomainError(Enum):
     """Domain errors with their type and HTTP mapping"""
 
-    # Entity Not Found Errors
-    USER_NOT_FOUND = (DomainErrorType.ENTITY_NOT_FOUND, 404)
-    COURSE_NOT_FOUND = (DomainErrorType.ENTITY_NOT_FOUND, 404)
-    ORDER_NOT_FOUND = (DomainErrorType.ENTITY_NOT_FOUND, 404)
-    PRODUCT_NOT_FOUND = (DomainErrorType.ENTITY_NOT_FOUND, 404)
-    ENROLLMENT_NOTFOUND = (DomainErrorType.ENTITY_NOT_FOUND, 404)
-
+    # Entity Not Found Errors - using unique identifiers
+    USER_NOT_FOUND = ("USER_NOT_FOUND", DomainErrorType.ENTITY_NOT_FOUND, 404)
+    COURSE_NOT_FOUND = ("COURSE_NOT_FOUND", DomainErrorType.ENTITY_NOT_FOUND, 404)
+    ORDER_NOT_FOUND = ("ORDER_NOT_FOUND", DomainErrorType.ENTITY_NOT_FOUND, 404)
+    PRODUCT_NOT_FOUND = ("PRODUCT_NOT_FOUND", DomainErrorType.ENTITY_NOT_FOUND, 404)
+    ENROLLMENT_NOTFOUND = ("ENROLLMENT_NOTFOUND", DomainErrorType.ENTITY_NOT_FOUND, 404)
 
     # Domain Validation Errors
-    INVALID_ARGUMENT = (DomainErrorType.DOMAIN_VALIDATION, 400)
-    INVALID_EMAIL_FORMAT = (DomainErrorType.DOMAIN_VALIDATION, 400)
-    INVALID_PASSWORD_FORMAT = (DomainErrorType.DOMAIN_VALIDATION, 400)
-    INVALID_ENTITY_STATE = (DomainErrorType.DOMAIN_VALIDATION, 400)
+    INVALID_ARGUMENT = ("INVALID_ARGUMENT", DomainErrorType.DOMAIN_VALIDATION, 400)
+    INVALID_EMAIL_FORMAT = ("INVALID_EMAIL_FORMAT", DomainErrorType.DOMAIN_VALIDATION, 400)
+    INVALID_PASSWORD_FORMAT = ("INVALID_PASSWORD_FORMAT", DomainErrorType.DOMAIN_VALIDATION, 400)
+    INVALID_ENTITY_STATE = ("INVALID_ENTITY_STATE", DomainErrorType.DOMAIN_VALIDATION, 400)
 
     # Business Rule Violations
-    INSUFFICIENT_PERMISSIONS = (DomainErrorType.BUSINESS_RULE_VIOLATION, 403)
-    COURSE_ENROLLMENT_LIMIT_EXCEEDED = (DomainErrorType.BUSINESS_RULE_VIOLATION, 409)
-    DUPLICATE_ENROLLMENT_ATTEMPT = (DomainErrorType.BUSINESS_RULE_VIOLATION, 409)
-    PAYMENT_PROCESSING_FAILED = (DomainErrorType.BUSINESS_RULE_VIOLATION, 402)
-    BUSINESS_INVARIANT_VIOLATED = (DomainErrorType.BUSINESS_RULE_VIOLATION, 422)
+    INSUFFICIENT_PERMISSIONS = ("INSUFFICIENT_PERMISSIONS", DomainErrorType.BUSINESS_RULE_VIOLATION, 403)
+    COURSE_ENROLLMENT_LIMIT_EXCEEDED = ("COURSE_ENROLLMENT_LIMIT_EXCEEDED", DomainErrorType.BUSINESS_RULE_VIOLATION, 409)
+    DUPLICATE_ENROLLMENT_ATTEMPT = ("DUPLICATE_ENROLLMENT_ATTEMPT", DomainErrorType.BUSINESS_RULE_VIOLATION, 409)
+    PAYMENT_PROCESSING_FAILED = ("PAYMENT_PROCESSING_FAILED", DomainErrorType.BUSINESS_RULE_VIOLATION, 402)
+    BUSINESS_INVARIANT_VIOLATED = ("BUSINESS_INVARIANT_VIOLATED", DomainErrorType.BUSINESS_RULE_VIOLATION, 422)
 
     # Infrastructure Errors
-    REPOSITORY_ACCESS_FAILED = (DomainErrorType.INFRASTRUCTURE, 500)
-    EXTERNAL_SERVICE_UNAVAILABLE = (DomainErrorType.INFRASTRUCTURE, 503)
-    DATABASE_CONNECTION_FAILED = (DomainErrorType.INFRASTRUCTURE, 500)
+    REPOSITORY_ACCESS_FAILED = ("REPOSITORY_ACCESS_FAILED", DomainErrorType.INFRASTRUCTURE, 500)
+    EXTERNAL_SERVICE_UNAVAILABLE = ("EXTERNAL_SERVICE_UNAVAILABLE", DomainErrorType.INFRASTRUCTURE, 503)
+    DATABASE_CONNECTION_FAILED = ("DATABASE_CONNECTION_FAILED", DomainErrorType.INFRASTRUCTURE, 500)
 
-    def __init__(self, error_type: DomainErrorType, http_status: int):
+    def __init__(self, code: str, error_type: DomainErrorType, http_status: int):
+        self.code = code
         self.error_type = error_type
         self.http_status = http_status
-
-    @property
-    def code(self) -> str:
-        """Returns the enum name as the error code"""
-        return self.name
 
     def __str__(self):
         return self.code

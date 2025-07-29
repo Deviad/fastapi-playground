@@ -17,7 +17,13 @@ from fastapi_playground_poc.transactional import Transactional
 from fastapi_playground_poc.models.Course import Course
 from fastapi_playground_poc.models.User import User
 from fastapi_playground_poc.models.Enrollment import Enrollment
-from fastapi_playground_poc.schemas import CourseCreate, CourseResponseWithUsers, CourseUpdate, UserInfoResponse, UserResponseWithCourses
+from fastapi_playground_poc.schemas import (
+    CourseCreate,
+    CourseResponseWithUsers,
+    CourseUpdate,
+    UserInfoResponse,
+    UserResponseWithCourses,
+)
 
 
 class CourseService:
@@ -26,7 +32,9 @@ class CourseService:
     # Course CRUD Operations
 
     @Transactional(auto_expunge=True)
-    async def create_course(self, db: AsyncSession, course_data: CourseCreate) -> Course:
+    async def create_course(
+        self, db: AsyncSession, course_data: CourseCreate
+    ) -> Course:
         """Create a new course."""
         new_course = Course(
             name=course_data.name,
@@ -46,10 +54,12 @@ class CourseService:
     async def get_course(self, db: AsyncSession, course_id: int) -> Optional[Course]:
         """Get a course by ID with enrolled users."""
         result = await db.execute(
-            select(Course).options(selectinload(Course.users).selectinload(User.user_info)).where(Course.id == course_id)
+            select(Course)
+            .options(selectinload(Course.users).selectinload(User.user_info))
+            .where(Course.id == course_id)
         )
         course = result.scalar_one_or_none()
-        
+
         if course is None:
             return None
 
@@ -60,7 +70,7 @@ class CourseService:
         #     db.expunge(user)
         #     if user.user_info:
         #         db.expunge(user.user_info)
-                
+
         return course
 
     @Transactional(auto_expunge=True)
@@ -72,7 +82,9 @@ class CourseService:
         return list(courses)
 
     @Transactional(auto_expunge=True)
-    async def update_course(self, db: AsyncSession, course_id: int, course_data: CourseUpdate) -> Optional[Course]:
+    async def update_course(
+        self, db: AsyncSession, course_id: int, course_data: CourseUpdate
+    ) -> Optional[Course]:
         """Update a course."""
         # Get the existing course
         result = await db.execute(select(Course).where(Course.id == course_id))
@@ -108,19 +120,36 @@ class CourseService:
     # Enrollment Management
 
     @Transactional(auto_expunge=True)
-    async def enroll_user_in_course(self, db: AsyncSession, user_id: int, course_id: int) -> Optional[Enrollment]:
+    async def enroll_user_in_course(
+        self, db: AsyncSession, user_id: int, course_id: int
+    ) -> Optional[Enrollment]:
         """Enroll a user in a course."""
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        logger.debug(f"Starting enrollment: user_id={user_id}, course_id={course_id}")
+
         # Check if user exists
         user_result = await db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
         if not user:
-            raise DomainException(DomainError.USER_NOT_FOUND, f"User with id {user.id} does not exist")
+            logger.error(f"User not found: user_id={user_id}")
+            raise DomainException(
+                DomainError.USER_NOT_FOUND, f"User with id {user_id} does not exist"
+            )
 
         # Check if course exists
         course_result = await db.execute(select(Course).where(Course.id == course_id))
         course = course_result.scalar_one_or_none()
         if course is None:
-            raise DomainException(DomainError.COURSE_NOT_FOUND, f"Course with id {course.id} does not exist")
+            logger.error(f"Course not found: course_id={course_id}")
+            raise DomainException(
+                DomainError.COURSE_NOT_FOUND,
+                f"Course with id {course_id} does not exist",
+            )
+
+        logger.debug(f"Both user and course found, creating enrollment")
 
         # Create enrollment
         new_enrollment = Enrollment(
@@ -128,25 +157,33 @@ class CourseService:
             course_id=course_id,
             enrollment_date=datetime.utcnow(),
         )
-        
+
         try:
             db.add(new_enrollment)
             await db.commit()
             await db.refresh(new_enrollment)
-            # db.expunge(new_enrollment) // not needed if using auto_expunge
+            logger.debug(
+                f"Enrollment created successfully: enrollment_id={new_enrollment.id}"
+            )
             return new_enrollment
-        except IntegrityError:
+        except IntegrityError as e:
+            logger.error(f"IntegrityError during enrollment: {str(e)}")
+            # Let the @Transactional decorator handle the rollback automatically
+            # Don't manually commit/rollback here as it interferes with the decorator
             raise DomainException(
-                DomainError.COURSE_NOT_FOUND,
+                DomainError.DUPLICATE_ENROLLMENT_ATTEMPT,
                 "User is already enrolled in the course",
                 context={
-                    "course_id": course.id,
+                    "course_id": course_id,
                     "user_id": user_id,
-                }
+                    "original_error": str(e),
+                },
             )
 
     @Transactional(auto_expunge=True)
-    async def unenroll_user_from_course(self, db: AsyncSession, user_id: int, course_id: int) -> bool:
+    async def unenroll_user_from_course(
+        self, db: AsyncSession, user_id: int, course_id: int
+    ) -> bool:
         """Unenroll a user from a course."""
         # Find the enrollment
         result = await db.execute(
@@ -159,19 +196,22 @@ class CourseService:
         if enrollment is None:
             raise DomainException(
                 DomainError.ENROLLMENT_NOTFOUND,
-                "User is already enrolled in the course",
+                "Enrollment not found for this user and course",
                 context={
                     "course_id": course_id,
                     "user_id": user_id,
-                }
+                },
             )
 
         # Delete the enrollment
         await db.delete(enrollment)
         await db.commit()
+        return True
 
     @Transactional(auto_expunge=True)
-    async def get_user_courses(self, db: AsyncSession, user_id: int) -> Optional[UserResponseWithCourses]:
+    async def get_user_courses(
+        self, db: AsyncSession, user_id: int
+    ) -> Optional[UserResponseWithCourses]:
         """Get a user with all their enrolled courses."""
         # Get user first (without loading enrollments to avoid cache)
         user_result = await db.execute(
@@ -203,12 +243,16 @@ class CourseService:
         return UserResponseWithCourses(
             id=user.id,
             name=user.name,
-            user_info=UserInfoResponse(
-                id=user.user_info.id,
-                address=user.user_info.address,
-                bio=user.user_info.bio
-            ) if user.user_info else None,
-            courses=courses
+            user_info=(
+                UserInfoResponse(
+                    id=user.user_info.id,
+                    address=user.user_info.address,
+                    bio=user.user_info.bio,
+                )
+                if user.user_info
+                else None
+            ),
+            courses=courses,
         )
         # return {
         #     "id": user.id,
@@ -222,7 +266,9 @@ class CourseService:
         # }
 
     @Transactional(auto_expunge=True)
-    async def get_course_users(self, db: AsyncSession, course_id: int) -> CourseResponseWithUsers:
+    async def get_course_users(
+        self, db: AsyncSession, course_id: int
+    ) -> CourseResponseWithUsers:
         """Get a course with all enrolled users."""
         # Get course first (without loading enrollments to avoid cache)
         course_result = await db.execute(select(Course).where(Course.id == course_id))
@@ -258,7 +304,7 @@ class CourseService:
             name=course.name,
             author_name=course.author_name,
             price=course.price,
-            users=users
+            users=users,
         )
 
         # Create response dict manually to include the users

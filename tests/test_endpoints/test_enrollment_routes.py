@@ -38,32 +38,42 @@ class TestEnrollmentEndpoints:
         assert isinstance(data["id"], int)
 
     @pytest.mark.unit
-    def test_enroll_user_nonexistent_user(self, test_client: TestClient, sample_course, mock_transactional_db):
+    def test_enroll_user_nonexistent_user(
+        self, test_client: TestClient, sample_course, mock_transactional_db
+    ):
         """Test enrollment with non-existent user."""
         non_existent_user_id = 99999
         course_id = sample_course.id
 
         with mock_transactional_db:
-            response = test_client.post(f"/user/{non_existent_user_id}/enroll/{course_id}")
+            response = test_client.post(
+                f"/user/{non_existent_user_id}/enroll/{course_id}"
+            )
 
         assert response.status_code == 404
         data = response.json()
-        assert "detail" in data
-        assert "user not found" in data["detail"].lower()
+        assert "message" in data
+        assert "USER_NOT_FOUND" in data["error_code"]
+        assert "does not exist" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_enroll_user_nonexistent_course(self, test_client: TestClient, sample_user, mock_transactional_db):
+    def test_enroll_user_nonexistent_course(
+        self, test_client: TestClient, sample_user, mock_transactional_db
+    ):
         """Test enrollment with non-existent course."""
         user_id = sample_user.id
         non_existent_course_id = 99999
 
         with mock_transactional_db:
-            response = test_client.post(f"/user/{user_id}/enroll/{non_existent_course_id}")
+            response = test_client.post(
+                f"/user/{user_id}/enroll/{non_existent_course_id}"
+            )
 
         assert response.status_code == 404
         data = response.json()
-        assert "detail" in data
-        assert "course not found" in data["detail"].lower()
+        assert "message" in data
+        assert "COURSE_NOT_FOUND" in data["error_code"]
+        assert "does not exist" in data["detail"].lower()
 
     @pytest.mark.unit
     def test_enroll_user_duplicate_enrollment(
@@ -79,7 +89,8 @@ class TestEnrollmentEndpoints:
 
         assert response.status_code == 409  # Conflict
         data = response.json()
-        assert "detail" in data
+        assert "message" in data
+        assert "DUPLICATE_ENROLLMENT_ATTEMPT" in data["error_code"]
         assert "already enrolled" in data["detail"].lower()
 
     @pytest.mark.unit
@@ -114,7 +125,8 @@ class TestEnrollmentEndpoints:
 
         assert response.status_code == 404
         data = response.json()
-        assert "detail" in data
+        assert "message" in data
+        assert "ENROLLMENT_NOTFOUND" in data["error_code"]
         assert "enrollment not found" in data["detail"].lower()
 
     @pytest.mark.unit
@@ -162,7 +174,9 @@ class TestEnrollmentEndpoints:
         assert "price" in course
 
     @pytest.mark.unit
-    def test_get_user_courses_nonexistent_user(self, test_client: TestClient, mock_transactional_db):
+    def test_get_user_courses_nonexistent_user(
+        self, test_client: TestClient, mock_transactional_db
+    ):
         """Test retrieving courses for non-existent user."""
         non_existent_user_id = 99999
 
@@ -218,7 +232,9 @@ class TestEnrollmentEndpoints:
         assert "user_info" in user
 
     @pytest.mark.unit
-    def test_get_course_users_nonexistent_course(self, test_client: TestClient, mock_transactional_db):
+    def test_get_course_users_nonexistent_course(
+        self, test_client: TestClient, mock_transactional_db
+    ):
         """Test retrieving users for non-existent course."""
         non_existent_course_id = 99999
 
@@ -258,7 +274,9 @@ class TestEnrollmentEndpoints:
             assert course_data["users"][0]["id"] == user_id
 
             # Step 4: Unenroll user from course
-            unenroll_response = test_client.delete(f"/user/{user_id}/enroll/{course_id}")
+            unenroll_response = test_client.delete(
+                f"/user/{user_id}/enroll/{course_id}"
+            )
             assert unenroll_response.status_code == 200
 
             # Step 5: Verify enrollment no longer exists
@@ -274,7 +292,11 @@ class TestEnrollmentEndpoints:
 
     @pytest.mark.unit
     def test_multiple_enrollments_same_user(
-        self, test_client: TestClient, sample_user, multiple_courses, mock_transactional_db
+        self,
+        test_client: TestClient,
+        sample_user,
+        multiple_courses,
+        mock_transactional_db,
     ):
         """Test enrolling the same user in multiple courses."""
         user_id = sample_user.id
@@ -297,7 +319,11 @@ class TestEnrollmentEndpoints:
 
     @pytest.mark.unit
     def test_multiple_enrollments_same_course(
-        self, test_client: TestClient, multiple_users, sample_course, mock_transactional_db
+        self,
+        test_client: TestClient,
+        multiple_users,
+        sample_course,
+        mock_transactional_db,
     ):
         """Test enrolling multiple users in the same course."""
         course_id = sample_course.id

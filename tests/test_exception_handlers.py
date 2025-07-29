@@ -41,7 +41,7 @@ class TestValidationExceptionHandler:
         ]
 
         # Test the handler
-        with patch('fastapi_playground_poc.exception_handlers.logger') as mock_logger:
+        with patch("fastapi_playground_poc.exception_handlers.logger") as mock_logger:
             response = await validation_exception_handler(request, validation_error)
 
         # Verify response
@@ -62,7 +62,11 @@ class TestValidationExceptionHandler:
         validation_error = Mock(spec=ValidationError)
         validation_error.errors.return_value = [
             {"loc": ["name"], "msg": "field required", "type": "value_error.missing"},
-            {"loc": ["price"], "msg": "not a valid decimal", "type": "type_error.decimal"}
+            {
+                "loc": ["price"],
+                "msg": "not a valid decimal",
+                "type": "type_error.decimal",
+            },
         ]
 
         response = await validation_exception_handler(request, validation_error)
@@ -85,9 +89,11 @@ class TestIntegrityErrorHandler:
         # Mock IntegrityError with duplicate key message
         integrity_error = Mock(spec=IntegrityError)
         integrity_error.orig = Mock()
-        integrity_error.orig.__str__ = Mock(return_value="UNIQUE constraint failed: enrollments.user_id_course_id")
+        integrity_error.orig.__str__ = Mock(
+            return_value="UNIQUE constraint failed: enrollments.user_id_course_id"
+        )
 
-        with patch('fastapi_playground_poc.exception_handlers.logger') as mock_logger:
+        with patch("fastapi_playground_poc.exception_handlers.logger") as mock_logger:
             response = await integrity_error_handler(request, integrity_error)
 
         assert response.status_code == 409
@@ -105,7 +111,9 @@ class TestIntegrityErrorHandler:
 
         integrity_error = Mock(spec=IntegrityError)
         integrity_error.orig = Mock()
-        integrity_error.orig.__str__ = Mock(return_value="duplicate key value violates unique constraint")
+        integrity_error.orig.__str__ = Mock(
+            return_value="duplicate key value violates unique constraint"
+        )
 
         response = await integrity_error_handler(request, integrity_error)
 
@@ -122,7 +130,9 @@ class TestIntegrityErrorHandler:
 
         integrity_error = Mock(spec=IntegrityError)
         integrity_error.orig = Mock()
-        integrity_error.orig.__str__ = Mock(return_value="foreign key constraint failed")
+        integrity_error.orig.__str__ = Mock(
+            return_value="foreign key constraint failed"
+        )
 
         response = await integrity_error_handler(request, integrity_error)
 
@@ -160,7 +170,7 @@ class TestHttpExceptionHandler:
 
         http_exception = HTTPException(status_code=404, detail="User not found")
 
-        with patch('fastapi_playground_poc.exception_handlers.logger') as mock_logger:
+        with patch("fastapi_playground_poc.exception_handlers.logger") as mock_logger:
             response = await http_exception_handler(request, http_exception)
 
         assert response.status_code == 404
@@ -191,7 +201,9 @@ class TestHttpExceptionHandler:
         request = Mock(spec=Request)
         request.url = "http://test.com/api/enrollment"
 
-        http_exception = HTTPException(status_code=409, detail="User is already enrolled in the course")
+        http_exception = HTTPException(
+            status_code=409, detail="User is already enrolled in the course"
+        )
 
         response = await http_exception_handler(request, http_exception)
 
@@ -212,7 +224,7 @@ class TestGeneralExceptionHandler:
 
         runtime_error = RuntimeError("Unexpected runtime error")
 
-        with patch('fastapi_playground_poc.exception_handlers.logger') as mock_logger:
+        with patch("fastapi_playground_poc.exception_handlers.logger") as mock_logger:
             response = await general_exception_handler(request, runtime_error)
 
         assert response.status_code == 500
@@ -230,7 +242,7 @@ class TestGeneralExceptionHandler:
 
         value_error = ValueError("Invalid value provided")
 
-        with patch('fastapi_playground_poc.exception_handlers.logger') as mock_logger:
+        with patch("fastapi_playground_poc.exception_handlers.logger") as mock_logger:
             response = await general_exception_handler(request, value_error)
 
         assert response.status_code == 500
@@ -248,7 +260,7 @@ class TestGeneralExceptionHandler:
 
         type_error = TypeError("'NoneType' object is not callable")
 
-        with patch('fastapi_playground_poc.exception_handlers.logger') as mock_logger:
+        with patch("fastapi_playground_poc.exception_handlers.logger") as mock_logger:
             response = await general_exception_handler(request, type_error)
 
         assert response.status_code == 500
@@ -268,15 +280,15 @@ class TestRegisterExceptionHandlers:
         # Create a mock FastAPI app
         mock_app = Mock(spec=FastAPI)
 
-        with patch('fastapi_playground_poc.exception_handlers.logger') as mock_logger:
+        with patch("fastapi_playground_poc.exception_handlers.logger") as mock_logger:
             register_exception_handlers(mock_app)
 
         # Verify all handlers were registered
-        assert mock_app.add_exception_handler.call_count == 4
+        assert mock_app.add_exception_handler.call_count == 5
 
         # Verify the calls included the right exception types and handlers
         calls = mock_app.add_exception_handler.call_args_list
-        
+
         # Check that ValidationError, IntegrityError, HTTPException, and Exception were registered
         exception_types = [call[0][0] for call in calls]
         assert ValidationError in exception_types
@@ -285,7 +297,9 @@ class TestRegisterExceptionHandlers:
         assert Exception in exception_types
 
         # Verify logging
-        mock_logger.info.assert_called_once_with("Global exception handlers registered successfully")
+        mock_logger.info.assert_called_once_with(
+            "Global exception handlers registered successfully"
+        )
 
     @pytest.mark.unit
     def test_register_exception_handlers_multiple_calls(self):
@@ -296,15 +310,17 @@ class TestRegisterExceptionHandlers:
         register_exception_handlers(mock_app)
         register_exception_handlers(mock_app)
 
-        # Should have been called 8 times total (4 handlers × 2 calls)
-        assert mock_app.add_exception_handler.call_count == 8
+        # Should have been called 10 times total (5 handlers × 2 calls)
+        assert mock_app.add_exception_handler.call_count == 10
 
 
 class TestExceptionHandlersIntegration:
     """Integration tests for exception handlers with FastAPI."""
 
     @pytest.mark.unit
-    def test_exception_handlers_integration_validation_error(self, test_client: TestClient):
+    def test_exception_handlers_integration_validation_error(
+        self, test_client: TestClient
+    ):
         """Test ValidationError handling through FastAPI integration."""
         # Try to create a user with invalid data to trigger ValidationError
         invalid_data = {
@@ -313,25 +329,29 @@ class TestExceptionHandlersIntegration:
         }
 
         response = test_client.post("/user", json=invalid_data)
-        
+
         assert response.status_code == 422  # FastAPI's default for validation errors
         data = response.json()
         assert "detail" in data
 
     @pytest.mark.unit
-    def test_exception_handlers_integration_http_exception(self, test_client: TestClient, mock_transactional_db):
+    def test_exception_handlers_integration_http_exception(
+        self, test_client: TestClient, mock_transactional_db
+    ):
         """Test HTTPException handling through FastAPI integration."""
         with mock_transactional_db:
             # Try to get a non-existent user to trigger HTTPException
             response = test_client.get("/user/99999")
-            
+
             assert response.status_code == 404
             data = response.json()
             assert "detail" in data
             assert "not found" in data["detail"].lower()
 
     @pytest.mark.unit
-    def test_exception_handlers_integration_integrity_error(self, test_client: TestClient, sample_enrollment, mock_transactional_db):
+    def test_exception_handlers_integration_integrity_error(
+        self, test_client: TestClient, sample_enrollment, mock_transactional_db
+    ):
         """Test IntegrityError handling through FastAPI integration."""
         with mock_transactional_db:
             # Try to create a duplicate enrollment to trigger IntegrityError
@@ -339,8 +359,9 @@ class TestExceptionHandlersIntegration:
             course_id = sample_enrollment.course_id
 
             response = test_client.post(f"/user/{user_id}/enroll/{course_id}")
-            
+
             assert response.status_code == 409  # Should be handled as conflict
             data = response.json()
-            assert "detail" in data
+            assert "message" in data
+            assert "DUPLICATE_ENROLLMENT_ATTEMPT" in data["error_code"]
             assert "already enrolled" in data["detail"].lower()

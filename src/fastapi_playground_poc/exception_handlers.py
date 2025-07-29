@@ -26,30 +26,26 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
     return JSONResponse(
         status_code=400,
         content={
-            "error": "Validation Error", 
+            "error": "Validation Error",
             "detail": "Invalid input data",
-            "errors": exc.errors()
-        }
+            "errors": exc.errors(),
+        },
     )
 
 
 async def integrity_error_handler(request: Request, exc: IntegrityError):
     """Handle SQLAlchemy IntegrityError - return 409 Conflict"""
     logger.warning(f"Integrity constraint violation on {request.url}: {exc}")
-    
+
     # Check if it's a duplicate key error (common pattern)
     error_msg = str(exc.orig) if exc.orig else str(exc)
     if "duplicate" in error_msg.lower() or "unique" in error_msg.lower():
         detail = "Resource already exists"
     else:
         detail = "Data integrity constraint violation"
-    
+
     return JSONResponse(
-        status_code=409,
-        content={
-            "error": "Conflict",
-            "detail": detail
-        }
+        status_code=409, content={"error": "Conflict", "detail": detail}
     )
 
 
@@ -58,36 +54,43 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     logger.info(f"HTTP exception on {request.url}: {exc.status_code} - {exc.detail}")
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "error": "HTTP Error",
-            "detail": exc.detail
-        }
+        content={"error": "HTTP Error", "detail": exc.detail},
     )
 
 
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle all other exceptions - return 500 Internal Server Error"""
-    logger.error(f"Unhandled exception on {request.url}: {type(exc).__name__}: {exc}", exc_info=True)
+    logger.error(
+        f"Unhandled exception on {request.url}: {type(exc).__name__}: {exc}",
+        exc_info=True,
+    )
     return JSONResponse(
         status_code=500,
         content={
             "error": "Internal Server Error",
-            "detail": "An unexpected error occurred"
-        }
+            "detail": "An unexpected error occurred",
+        },
     )
+
+
 # This variant is to avoid 20, 30, 40 handlers.
 def domain_exception_handler(request: Request, exc: DomainException) -> JSONResponse:
     """Convert domain exception to API response format"""
-    logger.error(f"Unhandled exception on {request.url}: {type(exc).__name__}: {exc}", exc_info=True)
+    logger.error(
+        f"Unhandled exception on {request.url}: {type(exc).__name__}: {exc}",
+        exc_info=True,
+    )
     return JSONResponse(
         status_code=exc.http_status,
         content={
             "error_code": exc.error_code,
             "error_type": exc.error_type.value,
             "message": exc.message,
+            "detail": exc.message,  # Add detail field for backward compatibility
             "context": exc.context,
-        }
+        },
     )
+
 
 def register_exception_handlers(app: FastAPI):
     """
@@ -99,5 +102,5 @@ def register_exception_handlers(app: FastAPI):
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(DomainException, domain_exception_handler)
     app.add_exception_handler(Exception, general_exception_handler)
-    
+
     logger.info("Global exception handlers registered successfully")

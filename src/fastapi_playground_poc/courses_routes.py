@@ -16,7 +16,9 @@ router = APIRouter()
 
 # Course CRUD Operations
 @router.post("/course", response_model=CourseResponse)
-async def create_course(course_data: CourseCreate, course_service: CourseService = Depends()):
+async def create_course(
+    course_data: CourseCreate, course_service: CourseService = Depends()
+):
     """Create a new course"""
     return await course_service.create_course(course_data)
 
@@ -62,21 +64,10 @@ async def enroll_user_in_course(
     user_id: int, course_id: int, course_service: CourseService = Depends()
 ):
     """Enroll a user in a course"""
-    try:
-        enrollment = await course_service.enroll_user_in_course(user_id, course_id)
-        if enrollment is None:
-            raise HTTPException(status_code=404, detail="User or course not found")
-        return enrollment
-    except ValueError as e:
-        error_message = str(e).lower()
-        if "user not found" in error_message:
-            raise HTTPException(status_code=404, detail="User not found")
-        elif "course not found" in error_message:
-            raise HTTPException(status_code=404, detail="Course not found")
-        elif "already enrolled" in error_message:
-            raise HTTPException(status_code=409, detail="User is already enrolled in the course")
-        else:
-            raise HTTPException(status_code=400, detail=str(e))
+    enrollment = await course_service.enroll_user_in_course(user_id, course_id)
+    if enrollment is None:
+        raise HTTPException(status_code=404, detail="User or course not found")
+    return enrollment
 
 
 @router.delete("/user/{user_id}/enroll/{course_id}")
